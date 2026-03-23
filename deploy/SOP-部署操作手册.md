@@ -14,8 +14,8 @@
 │                     我有项目文件（在本地电脑上）                    │
 │                                                                  │
 │  ┌─────────────────────────┐   ┌──────────────────────────────┐ │
-│  │  方式A：直接复制到服务器   │   │  方式B：先上传 GitLab，       │ │
-│  │  无需 Git，最简单         │   │  再从 GitLab 克隆到服务器     │ │
+│  │  方式A：直接复制到服务器   │   │  方式B：先上传 GitHub，       │ │
+│  │  无需 Git，最简单         │   │  再从 GitHub 克隆到服务器     │ │
 │  │  → 看【第一章】           │   │  → 先看【第二章】             │ │
 │  │                         │   │  → 再看【第三章】             │ │
 │  └─────────────────────────┘   └──────────────────────────────┘ │
@@ -29,14 +29,14 @@
 ## 目录
 
 - [第一章：本地文件直接复制部署（推荐）](#第一章本地文件直接复制部署推荐)
-- [第二章：上传代码到 GitLab](#第二章上传代码到-gitlab)
-- [第三章：从 GitLab 克隆后部署](#第三章从-gitlab-克隆后部署)
+- [第二章：上传代码到 GitHub](#第二章上传代码到-github)
+- [第三章：从 GitHub 克隆后部署](#第三章从-github-克隆后部署)
 - [第四章：生产环境部署（Kubernetes + Helm）](#第四章生产环境部署kubernetes--helm)
 - [第五章：日常运维操作](#第五章日常运维操作)
 - [第六章：常见错误与解决方案](#第六章常见错误与解决方案)
 - [附录 A：端口速查表](#附录-a端口速查表)
 - [附录 B：一键启动脚本说明](#附录-b一键启动脚本说明)
-- [附录 C：上传代码到 GitHub](#附录-c上传代码到-github)
+- [附录 C：Git 常用操作速查](#附录-cgit-常用操作速查)
 
 ---
 
@@ -45,7 +45,7 @@
 # 第一章：本地文件直接复制部署（推荐）
 
 > **适用场景：** 项目文件在本地电脑，服务器可以联网拉取 Docker 镜像，
-> 但不需要经过 GitLab，直接把文件传到服务器后拉起。
+> 但不需要经过 GitHub，直接把文件传到服务器后拉起。
 >
 > **服务器要求：** Rocky Linux 8/9（或 Ubuntu 20.04+），
 > 内存 ≥ 16GB，磁盘 ≥ 100GB，有 sudo 权限。
@@ -332,41 +332,59 @@ chmod +x deploy/start-all.sh
 
 ---
 
-# 第二章：上传代码到 GitLab
+# 第二章：上传代码到 GitHub
 
-> **适用场景：** 项目代码目前在本地电脑，需要上传到 GitLab 仓库，
+> **适用场景：** 项目代码目前在本地电脑，需要上传到 GitHub 仓库，
 > 以便团队协作或后续从服务器 git clone 拉取部署。
 >
-> 如果你不需要 GitLab，直接跳过本章，看【第一章】即可。
+> 如果你不需要 GitHub，直接跳过本章，看【第一章】即可。
 
 ---
 
-## 2.1 在 GitLab 创建空白项目
+## 2.1 在 GitHub 创建空白仓库
 
-1. 打开 GitLab（公司内网地址或 https://gitlab.com），登录
-2. 点击右上角 **`+`** → **New project**
-3. 选择 **Create blank project**
-4. 填写信息：
-   - **Project name**：`opsnexus`
-   - **Namespace**：选择你的组织（如 `platform`）
-   - **Visibility Level**：Private（推荐）
-5. ⚠️ **取消勾选** "Initialize repository with a README"
-6. 点击 **Create project**
+1. 打开 https://github.com，登录（没有账号先注册）
+2. 点击右上角 **`+`** → **New repository**
+3. 填写信息：
+   - **Repository name**：`opsnexus`
+   - **Description**（可选）：`OpsNexus AIOps Platform`
+   - **Visibility**：Private（推荐）
+4. ⚠️ **不要勾选** "Add a README file"、"Add .gitignore"、"Choose a license"
+5. 点击 **Create repository**
 
 创建成功后，页面显示仓库地址，复制 **HTTPS** 地址备用：
 
 ```
-https://gitlab.company.com/platform/opsnexus.git
+https://github.com/你的用户名/opsnexus.git
 ```
 
 ---
 
-## 2.2 安装并配置 Git（首次使用需执行）
+## 2.2 生成 Personal Access Token（必须）
+
+> GitHub 从 2021 年 8 月起已禁止用账号密码推送代码，必须使用 Token。
+
+1. 右上角头像 → **Settings**
+2. 左侧最底部 → **Developer settings**
+3. 左侧 → **Personal access tokens** → **Tokens (classic)**
+4. 点击 **Generate new token** → **Generate new token (classic)**
+5. 填写：
+   - **Note**：`opsnexus-push`
+   - **Expiration**：`90 days`（或 No expiration）
+   - **勾选权限**：`repo`（勾选整个 repo 大类即可）
+6. 点击 **Generate token**
+7. ⚠️ **立即复制 Token**（页面关闭后无法再次查看！）
+
+Token 格式示例：`ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+---
+
+## 2.3 安装并配置 Git（首次使用需执行）
 
 ```bash
 # 设置姓名和邮箱（会出现在提交记录中）
 git config --global user.name "你的姓名"
-git config --global user.email "你的邮箱@company.com"
+git config --global user.email "你的邮箱@gmail.com"
 ```
 
 ✅ 验证：
@@ -378,71 +396,93 @@ git config --global --list
 
 ---
 
-## 2.3 初始化并上传代码
+## 2.4 初始化并上传代码
 
 ```bash
 # 进入项目目录（Windows 路径示例）
 cd "D:\AI Project\Next Opm"
 
-# 初始化 Git 仓库
+# 初始化 Git 仓库（如果还没有 .git 目录）
 git init
 
-# 确认 .env 不会被提交（项目已配置 .gitignore，应已排除）
+# 确认 .env 不会被提交（项目已配置 .gitignore，会自动排除）
 git status | grep .env
-# 如果看到 .env，执行：git rm --cached deploy/docker-compose/.env
+# 如果意外出现，执行：git rm --cached deploy/docker-compose/.env
 
 # 添加所有文件到暂存区
 git add .
 
+# 查看将要提交的文件列表（建议检查一遍）
+git status
+
 # 创建初始提交
 git commit -m "feat: initial commit - OpsNexus platform"
 
-# 关联 GitLab 远程仓库（替换为 2.1 步复制的地址）
-git remote add origin https://gitlab.company.com/platform/opsnexus.git
+# 关联 GitHub 远程仓库（替换为 2.1 步复制的地址）
+git remote add origin https://github.com/你的用户名/opsnexus.git
 
-# 推送到 GitLab
+# 将本地分支重命名为 main（GitHub 默认分支名）
+git branch -M main
+
+# 推送到 GitHub
 git push -u origin main
 ```
 
-> **推送时会要求输入 GitLab 用户名和密码。**
-> GitLab 2021 年后不支持直接用账号密码，需使用 Personal Access Token：
->
-> GitLab → 右上角头像 → Edit Profile → Access Tokens
-> → 点击 Add new token → 勾选 `write_repository` → 创建
-> → 复制 Token，推送时当作密码使用
+**推送时弹出用户名密码提示：**
+
+```
+Username for 'https://github.com': 你的GitHub用户名
+Password for 'https://...':        粘贴 2.2 步生成的 Token（不是账号密码！）
+```
 
 ✅ 推送成功期望输出：
 
 ```
-To https://gitlab.company.com/platform/opsnexus.git
+To https://github.com/你的用户名/opsnexus.git
  * [new branch]      main -> main
 Branch 'main' set up to track remote branch 'main' from 'origin'.
 ```
 
 ---
 
-## 2.4 配置 SSH Key（可选，免密推送）
+## 2.5 让 Git 记住 Token（避免每次输入）
+
+```bash
+# Windows 凭据管理器（推荐）
+git config --global credential.helper manager
+
+# 或缓存模式（Linux/Mac）
+git config --global credential.helper 'cache --timeout=86400'
+```
+
+---
+
+## 2.6 配置 SSH Key（可选，完全免密）
 
 ```bash
 # 生成密钥（一路回车使用默认）
-ssh-keygen -t ed25519 -C "你的邮箱@company.com"
+ssh-keygen -t ed25519 -C "你的邮箱@gmail.com"
 
 # 查看公钥
 cat ~/.ssh/id_ed25519.pub
 ```
 
 将公钥内容复制，然后：
-GitLab → Edit Profile → SSH Keys → Add key → 粘贴 → 保存
+GitHub → Settings → SSH and GPG keys → New SSH key → 粘贴 → 保存
 
 ```bash
-# 改用 SSH 地址推送（之后免密）
-git remote set-url origin git@gitlab.company.com:platform/opsnexus.git
+# 测试连接
+ssh -T git@github.com
+# 期望：Hi 你的用户名! You've successfully authenticated...
+
+# 改用 SSH 地址推送（之后永久免密）
+git remote set-url origin git@github.com:你的用户名/opsnexus.git
 git push origin main
 ```
 
 ---
 
-## 2.5 后续代码更新推送
+## 2.7 后续代码更新推送
 
 每次修改后执行：
 
@@ -456,10 +496,10 @@ git push
 
 ---
 
-# 第三章：从 GitLab 克隆后部署
+# 第三章：从 GitHub 克隆后部署
 
-> **适用场景：** 代码已上传到 GitLab（见第二章），
-> 服务器能访问 GitLab，通过 git clone 拉取代码后部署。
+> **适用场景：** 代码已上传到 GitHub（见第二章），
+> 服务器能访问 GitHub，通过 git clone 拉取代码后部署。
 
 ---
 
@@ -487,8 +527,8 @@ sudo mv migrate /usr/local/bin/migrate
 ## 3.2 克隆代码
 
 ```bash
-# 替换为你的 GitLab 仓库地址
-git clone https://gitlab.company.com/platform/opsnexus.git
+# 替换为你的 GitHub 仓库地址
+git clone https://github.com/你的用户名/opsnexus.git
 cd opsnexus
 ```
 
@@ -520,7 +560,8 @@ git pull
 cd deploy/docker-compose
 docker compose up -d --build \
   svc-log svc-alert svc-incident svc-cmdb \
-  svc-notify svc-ai svc-analytics
+  svc-notify svc-ai svc-analytics \
+  svc-change svc-orchestration
 ```
 
 ---
@@ -548,11 +589,11 @@ docker compose up -d --build \
 
 ## 4.2 构建并推送镜像
 
-GitLab CI 在 push 到 `main` 分支时自动构建。手动构建：
+GitHub Actions 在 push 到 `main` 分支时自动构建。手动构建：
 
 ```bash
 IMAGE_TAG=$(git rev-parse --short HEAD)
-for svc in svc-log svc-alert svc-incident svc-cmdb svc-notify svc-ai svc-analytics; do
+for svc in svc-log svc-alert svc-incident svc-cmdb svc-notify svc-ai svc-analytics svc-change svc-orchestration; do
   docker build -t registry.company.com/opsnexus/${svc}:${IMAGE_TAG} \
     -f services/${svc}/Dockerfile .
   docker push registry.company.com/opsnexus/${svc}:${IMAGE_TAG}
@@ -872,18 +913,18 @@ chmod +x deploy/start-all.sh
 - ✅ 幂等运行：重复执行不会破坏已运行的服务
 - ✅ 前置检查：启动前验证 Docker、.env 文件是否就绪
 - ✅ 健康等待：每步等待就绪后再进行下一步
-- ✅ 微服务健康检查：启动后自动检测 7 个服务是否响应
+- ✅ 微服务健康检查：启动后自动检测 9 个服务是否响应
 - ✅ 彩色输出：绿色=正常，黄色=警告，红色=错误
 
 **脚本执行顺序：**
 
 ```
-[1/7] PostgreSQL × 7  ──→ 等待 30s
+[1/7] PostgreSQL × 9  ──→ 等待 30s
 [2/7] Redis + Kafka + ES + ClickHouse + MinIO
 [3/7] 初始化 Kafka Topics  ──→ 等待 Kafka 就绪
 [4/7] Keycloak + Kong  ──→ 等待 Keycloak /health/ready
 [5/7] 数据库迁移  ──→ golang-migrate up
-[6/7] 7 个微服务构建启动  ──→ 等待 30s
+[6/7] 9 个微服务构建启动  ──→ 等待 30s
 [7/7] Prometheus + Grafana
 ```
 
@@ -891,45 +932,47 @@ chmod +x deploy/start-all.sh
 
 ---
 
-# 附录 C：上传代码到 GitHub
+# 附录 C：Git 常用操作速查
 
-> **适用场景：** 项目代码在本地电脑，需要上传到 GitHub 仓库，
-> 以便个人备份、开源共享或团队协作。
->
-> 与 GitLab 操作非常相似，主要差异在于认证方式（使用 Personal Access Token）
-> 和网站界面不同。
+> 以下为日常使用 Git 管理 OpsNexus 代码的常用命令速查。
+> 详细的上传和克隆流程见第二章、第三章。
 
 ---
 
-## C.1 注册并登录 GitHub
+## C.1 日常提交推送
 
-1. 打开 https://github.com，点击右上角 **Sign up** 注册账号（已有账号直接登录）
-2. 登录后，点击右上角头像 → **Your repositories** 可看到你的仓库列表
+```bash
+# 查看改了哪些文件
+git status
 
----
+# 添加并提交
+git add .
+git commit -m "fix: 描述本次修改内容"
 
-## C.2 创建空白仓库
-
-1. 点击右上角 **`+`** → **New repository**
-2. 填写信息：
-   - **Repository name**：`opsnexus`
-   - **Description**（可选）：`OpsNexus AIOps Platform`
-   - **Visibility**：
-     - `Private`（私有，推荐）
-     - `Public`（公开，所有人可见）
-3. ⚠️ **不要勾选** "Add a README file"、"Add .gitignore"、"Choose a license"
-   （因为本地已有这些文件，勾选会导致推送冲突）
-4. 点击 **Create repository**
-
-创建成功后，页面显示仓库地址，复制 **HTTPS** 地址备用：
-
-```
-https://github.com/你的用户名/opsnexus.git
+# 推送到 GitHub
+git push
 ```
 
 ---
 
-## C.3 生成 Personal Access Token（必须）
+## C.2 从 GitHub 拉取最新代码
+
+```bash
+git pull
+```
+
+---
+
+## C.3 克隆仓库到新机器
+
+```bash
+git clone https://github.com/你的用户名/opsnexus.git
+cd opsnexus
+```
+
+---
+
+## C.4 生成 Personal Access Token（首次推送必须）
 
 > GitHub 从 2021 年 8 月起已禁止用账号密码推送代码，必须使用 Token。
 
@@ -948,175 +991,7 @@ Token 格式示例：`ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
 ---
 
-## C.4 安装并配置 Git（首次使用需执行）
-
-```bash
-# 设置姓名和邮箱（会出现在提交记录中）
-git config --global user.name "你的姓名"
-git config --global user.email "你的邮箱@gmail.com"
-```
-
-✅ 验证：
-
-```bash
-git config --global --list
-# 期望看到：user.name=xxx 和 user.email=xxx
-```
-
----
-
-## C.5 初始化并上传代码
-
-```bash
-# 进入项目目录
-cd "D:\AI Project\Next Opm"       # Windows
-# cd "/path/to/Next Opm"          # Mac/Linux
-
-# 初始化 Git 仓库（如果还没有 .git 目录）
-git init
-
-# 确认 .env 不会被提交（项目已配置 .gitignore，会自动排除）
-git status | grep .env
-# 如果意外出现，执行：git rm --cached deploy/docker-compose/.env
-
-# 添加所有文件到暂存区
-git add .
-
-# 查看将要提交的文件列表（可选，建议检查一遍）
-git status
-
-# 创建初始提交
-git commit -m "feat: initial commit - OpsNexus platform"
-
-# 关联 GitHub 远程仓库（替换为 C.2 步复制的地址）
-git remote add origin https://github.com/你的用户名/opsnexus.git
-
-# 将本地分支重命名为 main（GitHub 默认分支名）
-git branch -M main
-
-# 推送到 GitHub
-git push -u origin main
-```
-
-**推送时弹出用户名密码提示：**
-
-```
-Username for 'https://github.com': 你的GitHub用户名
-Password for 'https://...':        粘贴 C.3 步生成的 Token（不是账号密码！）
-```
-
-✅ 推送成功期望输出：
-
-```
-Enumerating objects: 312, done.
-Writing objects: 100% (312/312), done.
-To https://github.com/你的用户名/opsnexus.git
- * [new branch]      main -> main
-Branch 'main' set up to track remote branch 'main' from 'origin'.
-```
-
----
-
-## C.6 让 Git 记住 Token（避免每次输入）
-
-### 方法一：让 Git 缓存凭证（推荐）
-
-```bash
-# 缓存 15 分钟（默认）
-git config --global credential.helper cache
-
-# 或缓存更长时间（单位：秒，86400 = 1天）
-git config --global credential.helper 'cache --timeout=86400'
-```
-
-### 方法二：Windows 凭据管理器（Windows 系统推荐）
-
-```bash
-git config --global credential.helper manager
-```
-
-Windows 会弹出一个登录框，输入一次后自动保存，后续无需再输入。
-
-### 方法三：直接写入 URL（不推荐，有安全风险）
-
-```bash
-# 将 Token 嵌入地址（注意：Token 明文存储）
-git remote set-url origin https://你的用户名:ghp_xxxxxx@github.com/你的用户名/opsnexus.git
-```
-
----
-
-## C.7 配置 SSH Key（可选，完全免密）
-
-SSH Key 是更安全、更方便的认证方式，配置一次后永久有效。
-
-**第一步：生成密钥对**
-
-```bash
-ssh-keygen -t ed25519 -C "你的邮箱@gmail.com"
-# 一路回车（不设置 passphrase 最方便）
-```
-
-生成的文件：
-- 私钥：`~/.ssh/id_ed25519`（保密，不要泄露）
-- 公钥：`~/.ssh/id_ed25519.pub`（上传到 GitHub）
-
-**第二步：查看公钥**
-
-```bash
-# Linux/Mac
-cat ~/.ssh/id_ed25519.pub
-
-# Windows PowerShell
-cat $HOME\.ssh\id_ed25519.pub
-```
-
-复制输出的全部内容（以 `ssh-ed25519 AAAA...` 开头）。
-
-**第三步：添加到 GitHub**
-
-1. GitHub → 右上角头像 → **Settings**
-2. 左侧 → **SSH and GPG keys**
-3. 点击 **New SSH key**
-4. **Title**：`my-laptop`（随意填，标识这台电脑）
-5. **Key**：粘贴公钥内容
-6. 点击 **Add SSH key**
-
-**第四步：测试连接**
-
-```bash
-ssh -T git@github.com
-# 期望输出：Hi 你的用户名! You've successfully authenticated...
-```
-
-**第五步：改用 SSH 地址推送（之后永久免密）**
-
-```bash
-git remote set-url origin git@github.com:你的用户名/opsnexus.git
-git push origin main
-```
-
----
-
-## C.8 后续代码更新推送
-
-每次修改代码后执行：
-
-```bash
-# 查看改了哪些文件
-git status
-
-# 添加并提交
-git add .
-git commit -m "fix: 描述本次修改内容"
-
-# 推送到 GitHub
-git push
-```
-
----
-
-## C.9 常用 Git 操作速查
+## C.5 常用 Git 操作速查
 
 | 操作 | 命令 |
 |------|------|
@@ -1128,17 +1003,3 @@ git push
 | 查看远程地址 | `git remote -v` |
 | 从 GitHub 拉取最新代码 | `git pull` |
 | 克隆仓库到新机器 | `git clone https://github.com/你的用户名/opsnexus.git` |
-
----
-
-## C.10 GitHub vs GitLab 差异对照
-
-| 对比项 | GitHub | GitLab |
-|--------|--------|--------|
-| 地址 | https://github.com | 公司内网或 https://gitlab.com |
-| 认证 Token 名称 | Personal Access Token (PAT) | Personal Access Token |
-| Token 权限选项 | `repo`（全部读写） | `write_repository` |
-| SSH Key 设置位置 | Settings → SSH and GPG keys | Edit Profile → SSH Keys |
-| 默认分支名 | `main` | `main`（旧版本可能是 `master`）|
-| CI/CD | GitHub Actions | GitLab CI/CD |
-| 推送命令 | 完全相同 | 完全相同 |

@@ -12,6 +12,8 @@ volumes:
   pg-notify-data:
   pg-ai-data:
   pg-analytics-data:
+  pg-change-data:
+  pg-orchestration-data:
   redis-data:
   kafka-data:
   es-data:
@@ -161,6 +163,46 @@ services:
       - opsnexus-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${ANALYTICS_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pg-change:
+    image: postgres:16
+    container_name: opsnexus-pg-change
+    restart: unless-stopped
+    ports:
+      - "5440:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${CHANGE_DB_NAME}
+    volumes:
+      - pg-change-data:/var/lib/postgresql/data
+    networks:
+      - opsnexus-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${CHANGE_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pg-orchestration:
+    image: postgres:16
+    container_name: opsnexus-pg-orchestration
+    restart: unless-stopped
+    ports:
+      - "5441:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${ORCHESTRATION_DB_NAME}
+    volumes:
+      - pg-orchestration-data:/var/lib/postgresql/data
+    networks:
+      - opsnexus-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${ORCHESTRATION_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -495,6 +537,50 @@ services:
       pg-analytics:
         condition: service_healthy
       clickhouse:
+        condition: service_healthy
+    networks:
+      - opsnexus-net
+    restart: unless-stopped
+
+  svc-change:
+    build:
+      context: ../..
+      dockerfile: services/svc-change/Dockerfile
+    image: opsnexus/svc-change:dev
+    ports:
+      - "8088:8088"
+      - "9088:9088"
+    environment:
+      - DB_DSN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pg-change:5432/change_db?sslmode=disable
+      - KAFKA_BROKERS=kafka:9092
+      - HTTP_PORT=8088
+      - GRPC_PORT=9088
+    depends_on:
+      pg-change:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - opsnexus-net
+    restart: unless-stopped
+
+  svc-orchestration:
+    build:
+      context: ../..
+      dockerfile: services/svc-orchestration/Dockerfile
+    image: opsnexus/svc-orchestration:dev
+    ports:
+      - "8089:8089"
+      - "9089:9089"
+    environment:
+      - DB_DSN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pg-orchestration:5432/orchestration_db?sslmode=disable
+      - KAFKA_BROKERS=kafka:9092
+      - HTTP_PORT=8089
+      - GRPC_PORT=9089
+    depends_on:
+      pg-orchestration:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     networks:
       - opsnexus-net

@@ -50,7 +50,7 @@ lint-%: ## Lint a specific service (e.g., make lint-svc-log)
 	@cd services/$* && golangci-lint run ./...
 
 lint-frontend: ## Lint frontend code
-	@cd web && npm run lint
+	@cd frontend && pnpm run lint
 
 # --- Docker ---
 
@@ -123,13 +123,13 @@ clean: ## Clean build artifacts
 # --- Frontend ---
 
 web-install: ## Install frontend dependencies
-	@cd web && npm install
+	@cd frontend && pnpm install
 
 web-dev: ## Start frontend dev server
-	@cd web && npm run dev
+	@cd frontend && pnpm run dev
 
 web-build: ## Build frontend for production
-	@cd web && npm run build
+	@cd frontend && pnpm run build
 
 web-test: ## Run frontend tests
-	@cd web && npm run test
+	@cd frontend && pnpm run test
