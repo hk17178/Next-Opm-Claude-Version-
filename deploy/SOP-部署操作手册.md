@@ -246,12 +246,12 @@ chmod +x deploy/start-all.sh
 脚本将自动按顺序完成（约 5–10 分钟）：
 
 ```
-[1/7] 启动 7 个 PostgreSQL 数据库
+[1/7] 启动 9 个 PostgreSQL 数据库
 [2/7] 启动 Redis / Kafka / Elasticsearch / ClickHouse / MinIO
 [3/7] 初始化 Kafka Topics
 [4/7] 启动 Keycloak / Kong API 网关
 [5/7] 运行数据库迁移（建表）
-[6/7] 构建并启动 7 个微服务
+[6/7] 构建并启动 9 个微服务
 [7/7] 启动 Prometheus / Grafana 监控
 ```
 
@@ -274,7 +274,7 @@ sudo firewall-cmd --reload
 **健康检查：**
 
 ```bash
-for port in 8081 8082 8083 8084 8085 8086 8087; do
+for port in 8081 8082 8083 8084 8085 8086 8087 8088 8089; do
   echo -n "Port $port: "
   curl -sf http://localhost:$port/health && echo "OK" || echo "FAIL"
 done
