@@ -16,12 +16,12 @@ vendor/
 go.work.sum
 
 # Node / Frontend
-web/node_modules/
-web/**/node_modules/
-web/**/dist/
-web/**/.turbo/
+**/node_modules/
+**/dist/
+**/.turbo/
 .npm
 .pnpm-store/
+frontend/.pnpm-store/
 
 # IDE
 .vscode/
@@ -49,3 +49,6 @@ credentials.json
 tmp/
 temp/
 *.log
+
+# Claude
+.claude/
