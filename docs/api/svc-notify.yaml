@@ -1,0 +1,516 @@
+openapi: 3.0.3
+info:
+  title: OpsNexus Notification Service API
+  description: |
+    Multi-channel notification dispatch service.
+    Supports email, SMS, webhook, DingTalk, WeCom, Feishu, Slack.
+  version: 0.1.0
+  contact:
+    name: OpsNexus Team
+servers:
+  - url: /api/v1/notify
+    description: API Gateway routed
+
+tags:
+  - name: notifications
+    description: Notification dispatch and history
+  - name: channels
+    description: Notification channel configuration
+  - name: templates
+    description: Notification template management
+  - name: contacts
+    description: Contact and group management
+
+paths:
+  /send:
+    post:
+      operationId: sendNotification
+      tags: [notifications]
+      summary: Send a notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSendRequest'
+      responses:
+        '202':
+          description: Notification accepted for delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSendResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notification history
+      parameters:
+        - name: channel
+          in: query
+          schema:
+            type: string
+            enum: [email, sms, webhook, dingtalk, wecom, feishu, slack]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [delivered, failed, pending_retry]
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Notification history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+
+  /notifications/{notification_id}:
+    get:
+      operationId: getNotification
+      tags: [notifications]
+      summary: Get notification details
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /channels:
+    get:
+      operationId: listChannels
+      tags: [channels]
+      summary: List configured notification channels
+      responses:
+        '200':
+          description: Channel list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelListResponse'
+
+    post:
+      operationId: createChannel
+      tags: [channels]
+      summary: Configure a new notification channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelCreateRequest'
+      responses:
+        '201':
+          description: Channel configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+
+  /channels/{channel_id}:
+    put:
+      operationId: updateChannel
+      tags: [channels]
+      summary: Update channel configuration
+      parameters:
+        - $ref: '#/components/parameters/ChannelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelUpdateRequest'
+      responses:
+        '200':
+          description: Channel updated
+
+    delete:
+      operationId: deleteChannel
+      tags: [channels]
+      summary: Delete a notification channel
+      parameters:
+        - $ref: '#/components/parameters/ChannelId'
+      responses:
+        '204':
+          description: Channel deleted
+
+  /channels/{channel_id}/test:
+    post:
+      operationId: testChannel
+      tags: [channels]
+      summary: Send a test notification through a channel
+      parameters:
+        - $ref: '#/components/parameters/ChannelId'
+      responses:
+        '200':
+          description: Test notification sent
+
+  /templates:
+    get:
+      operationId: listTemplates
+      tags: [templates]
+      summary: List notification templates
+      responses:
+        '200':
+          description: Template list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateListResponse'
+
+    post:
+      operationId: createTemplate
+      tags: [templates]
+      summary: Create a notification template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreateRequest'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /contacts:
+    get:
+      operationId: listContacts
+      tags: [contacts]
+      summary: List contacts
+      parameters:
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Contact list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactListResponse'
+
+    post:
+      operationId: createContact
+      tags: [contacts]
+      summary: Create a contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreateRequest'
+      responses:
+        '201':
+          description: Contact created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+
+components:
+  parameters:
+    NotificationId:
+      name: notification_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ChannelId:
+      name: channel_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    NotificationSendRequest:
+      type: object
+      required: [channel, recipients, content]
+      properties:
+        channel:
+          type: string
+          enum: [email, sms, webhook, dingtalk, wecom, feishu, slack]
+        recipients:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        template_id:
+          type: string
+        content:
+          type: object
+          properties:
+            subject:
+              type: string
+            body:
+              type: string
+            variables:
+              type: object
+              additionalProperties:
+                type: string
+        priority:
+          type: string
+          enum: [critical, high, normal, low]
+          default: normal
+        incident_id:
+          type: string
+          format: uuid
+        alert_id:
+          type: string
+          format: uuid
+
+    NotificationSendResponse:
+      type: object
+      properties:
+        notification_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        channel:
+          type: string
+        recipient:
+          type: string
+        status:
+          type: string
+          enum: [delivered, failed, pending_retry]
+        sent_at:
+          type: string
+          format: date-time
+        retry_count:
+          type: integer
+        error_message:
+          type: string
+        incident_id:
+          type: string
+          format: uuid
+        alert_id:
+          type: string
+          format: uuid
+
+    NotificationListResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        next_page_token:
+          type: string
+
+    Channel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [email, sms, webhook, dingtalk, wecom, feishu, slack]
+        enabled:
+          type: boolean
+        config:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    ChannelCreateRequest:
+      type: object
+      required: [name, type, config]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [email, sms, webhook, dingtalk, wecom, feishu, slack]
+        config:
+          type: object
+          additionalProperties: true
+
+    ChannelUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        config:
+          type: object
+          additionalProperties: true
+
+    ChannelListResponse:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Channel'
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        channel:
+          type: string
+        subject_template:
+          type: string
+        body_template:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    TemplateCreateRequest:
+      type: object
+      required: [name, channel, body_template]
+      properties:
+        name:
+          type: string
+        channel:
+          type: string
+        subject_template:
+          type: string
+        body_template:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+
+    TemplateListResponse:
+      type: object
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Template'
+
+    Contact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        im_accounts:
+          type: object
+          additionalProperties:
+            type: string
+        groups:
+          type: array
+          items:
+            type: string
+
+    ContactCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        im_accounts:
+          type: object
+          additionalProperties:
+            type: string
+        groups:
+          type: array
+          items:
+            type: string
+
+    ContactListResponse:
+      type: object
+      properties:
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        next_page_token:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

@@ -1,0 +1,325 @@
+openapi: 3.0.3
+info:
+  title: OpsNexus Log Service API
+  description: |
+    Log ingestion, storage, and search service.
+    Handles structured and unstructured log data from agents, SDKs, and syslog endpoints.
+  version: 0.1.0
+  contact:
+    name: OpsNexus Team
+servers:
+  - url: /api/v1/log
+    description: API Gateway routed
+
+tags:
+  - name: ingestion
+    description: Log ingestion endpoints
+  - name: search
+    description: Log search and query endpoints
+  - name: streams
+    description: Log stream management
+
+paths:
+  /ingest:
+    post:
+      operationId: ingestLogs
+      tags: [ingestion]
+      summary: Ingest a batch of log entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogIngestRequest'
+      responses:
+        '202':
+          description: Logs accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogIngestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /search:
+    post:
+      operationId: searchLogs
+      tags: [search]
+      summary: Search logs with query DSL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogSearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /streams:
+    get:
+      operationId: listStreams
+      tags: [streams]
+      summary: List log streams
+      parameters:
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: List of log streams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamListResponse'
+
+    post:
+      operationId: createStream
+      tags: [streams]
+      summary: Create a new log stream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamCreateRequest'
+      responses:
+        '201':
+          description: Stream created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+
+  /streams/{stream_id}:
+    get:
+      operationId: getStream
+      tags: [streams]
+      summary: Get log stream details
+      parameters:
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '200':
+          description: Stream details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      operationId: deleteStream
+      tags: [streams]
+      summary: Delete a log stream
+      parameters:
+        - $ref: '#/components/parameters/StreamId'
+      responses:
+        '204':
+          description: Stream deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    StreamId:
+      name: stream_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    LogIngestRequest:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+          maxItems: 1000
+
+    LogEntry:
+      type: object
+      required: [timestamp, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [DEBUG, INFO, WARN, ERROR, FATAL]
+        message:
+          type: string
+        service_name:
+          type: string
+        host_id:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        trace_id:
+          type: string
+        span_id:
+          type: string
+
+    LogIngestResponse:
+      type: object
+      properties:
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              reason:
+                type: string
+
+    LogSearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          description: Search query string (Lucene-like syntax)
+        time_range:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+        page_size:
+          type: integer
+          default: 50
+        page_token:
+          type: string
+        sort:
+          type: string
+          enum: [asc, desc]
+          default: desc
+
+    LogSearchResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+        next_page_token:
+          type: string
+
+    Stream:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        filter:
+          type: string
+        retention_days:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    StreamCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        filter:
+          type: string
+        retention_days:
+          type: integer
+          default: 30
+
+    StreamListResponse:
+      type: object
+      properties:
+        streams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stream'
+        next_page_token:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Error:
+      description: Generic error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  # Reusable error schema (referenced above via $ref workaround)
+  # Note: 'Error' is defined under schemas below for reuse
+  # schemas.Error:
+    # Already defined inline above; OpenAPI 3.0 allows $ref in responses
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

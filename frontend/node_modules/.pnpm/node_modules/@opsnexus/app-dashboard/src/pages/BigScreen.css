@@ -1,0 +1,28 @@
+/* BigScreen 大屏页样式 */
+
+.bigscreen-chart-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.bigscreen-incident-pie-container {
+  height: 220px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bigscreen-incident-pie-placeholder {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.bigscreen-incident-pie-count {
+  font-size: 40px;
+  font-weight: 700;
+  color: #FF7D00;
+}
+
+.bigscreen-incident-pie-label {
+  font-size: 14px;
+}

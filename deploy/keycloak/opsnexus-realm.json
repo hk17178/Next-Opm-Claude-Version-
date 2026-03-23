@@ -1,0 +1,77 @@
+{
+  "realm": "opsnexus",
+  "enabled": true,
+  "ssoSessionMaxLifespan": 36000,
+  "ssoSessionIdleTimeout": 1800,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "registrationAllowed": false,
+  "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and digits(1)",
+  "clients": [
+    {
+      "clientId": "opsnexus-frontend",
+      "name": "OpsNexus Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "opsnexus-backend",
+      "name": "OpsNexus Backend",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "CHANGE_ME_IN_PRODUCTION",
+      "protocol": "openid-connect"
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "platform_admin",
+        "description": "Full platform administration access"
+      },
+      {
+        "name": "biz_admin",
+        "description": "Business administration access"
+      },
+      {
+        "name": "ops_engineer",
+        "description": "Operations engineer access"
+      },
+      {
+        "name": "observer",
+        "description": "Read-only observer access"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "platform_admin",
+      "realmRoles": ["platform_admin"]
+    },
+    {
+      "name": "biz_admin",
+      "realmRoles": ["biz_admin"]
+    },
+    {
+      "name": "ops_engineer",
+      "realmRoles": ["ops_engineer"]
+    },
+    {
+      "name": "observer",
+      "realmRoles": ["observer"]
+    }
+  ]
+}

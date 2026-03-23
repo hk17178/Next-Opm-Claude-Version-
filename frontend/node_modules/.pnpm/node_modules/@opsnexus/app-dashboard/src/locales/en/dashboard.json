@@ -1,0 +1,34 @@
+{
+  "status.title": "OpsNexus NOC",
+  "status.activeAlerts": "Active Alerts",
+  "status.activeIncidents": "Active Incidents",
+  "status.normal": "Normal",
+  "status.degraded": "Degraded",
+
+  "kpi.activeAlerts": "Active Alerts",
+  "kpi.todayEvents": "Today Events",
+  "kpi.logVolume24h": "Log Volume (24h)",
+  "kpi.serviceHealth": "Service Health",
+
+  "alertTrend": "Alert Trend (Last 7 Days)",
+  "businessHealth": "Business Health Matrix",
+  "resourceCurves": "Resource Trend Curves",
+  "miniCockpit": "Incident Cockpit Mini",
+
+  "recentAlerts.title": "Recent Unhandled Alerts",
+  "recentAlerts.severity": "Severity",
+  "recentAlerts.content": "Alert Content",
+  "recentAlerts.source": "Source",
+  "recentAlerts.time": "Trigger Time",
+
+  "card.alertsToday": "Today Alerts",
+  "card.incidentsToday": "Today Incidents",
+  "card.resolved": "Resolved",
+  "card.avgMTTR": "Avg MTTR",
+
+  "alertWaterfall": "Alert Waterfall",
+  "placeholder.alertStream": "Real-time alert stream pending (WebSocket)",
+  "placeholder.healthMatrix": "Business health matrix pending (ECharts)",
+  "placeholder.resourceCharts": "Resource curve charts pending (ECharts)",
+  "placeholder.cockpitMini": "Cockpit mini view pending"
+}

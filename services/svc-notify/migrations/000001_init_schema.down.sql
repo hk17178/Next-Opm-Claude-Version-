@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS contacts;
+DROP TABLE IF EXISTS templates;
+DROP TABLE IF EXISTS broadcast_rules;
+DROP TABLE IF EXISTS notification_logs;
+DROP TABLE IF EXISTS bots;

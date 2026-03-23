@@ -1,0 +1,32 @@
+server:
+  http_addr: ":8084"
+  grpc_addr: ":9086"
+
+postgres:
+  dsn: "postgres://opm:opm@localhost:5432/opm_alert?sslmode=disable"
+  max_open_conns: 20
+  max_idle_conns: 5
+
+kafka:
+  brokers:
+    - "localhost:9092"
+  consumer_group: "svc-alert-group"
+  topics:
+    log_ingested: "opsnexus.log.ingested"
+    metric_ingested: "opsnexus.metric.ingested"
+  producer_topic: "opsnexus.alert.fired"
+
+alert:
+  evaluation_interval: "30s"
+  baseline:
+    min_samples: 100
+    default_deviation_pct: 30.0
+    default_learning_days: 14
+  dedup:
+    default_cooldown_minutes: 5
+  ironclad:
+    max_latency_seconds: 30
+
+log:
+  level: "info"
+  format: "json"

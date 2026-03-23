@@ -1,0 +1,50 @@
+/* Dashboard 页样式 */
+
+.dashboard-root {
+  background: var(--bg-secondary);
+  min-height: 100vh;
+  padding: 24px;
+  color: var(--text-primary);
+}
+
+.dashboard-trend-chart {
+  height: 160px;
+  width: 100%;
+}
+
+/* 卡片标题文字 */
+.dashboard-card-title {
+  color: var(--text-primary);
+}
+
+/* KPI 统计数字标签文字 */
+.dashboard-stat-label {
+  color: var(--text-secondary);
+}
+
+/* 表格：主要文字 */
+.dashboard-cell-primary {
+  color: var(--text-primary);
+}
+
+/* 表格：次要文字（来源、时间等） */
+.dashboard-cell-secondary {
+  color: var(--text-secondary);
+}
+
+/* 占位提示文字 */
+.dashboard-placeholder {
+  text-align: center;
+  color: var(--text-tertiary);
+  padding: 48px;
+}
+
+/* SVG 折线图：坐标轴刻度线 */
+.svg-grid-line {
+  stroke: var(--border-primary);
+}
+
+/* SVG 折线图：坐标轴文字 */
+.svg-axis-text {
+  fill: var(--text-tertiary);
+}

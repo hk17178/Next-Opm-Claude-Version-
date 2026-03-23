@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsnexus.io/schemas/events/opsnexus.asset.changed.v1",
+  "title": "Asset Changed Event",
+  "description": "Emitted by svc-cmdb when an asset is created, updated, or deleted.",
+  "type": "object",
+  "required": ["specversion", "id", "type", "source", "time", "data"],
+  "properties": {
+    "specversion": { "type": "string", "const": "1.0" },
+    "id": { "type": "string", "format": "uuid" },
+    "type": { "type": "string", "const": "opsnexus.asset.changed" },
+    "source": { "type": "string" },
+    "time": { "type": "string", "format": "date-time" },
+    "datacontenttype": { "type": "string", "const": "application/json" },
+    "data": {
+      "type": "object",
+      "required": ["asset_id", "change_type", "asset_type"],
+      "properties": {
+        "asset_id": { "type": "string", "format": "uuid" },
+        "change_type": {
+          "type": "string",
+          "enum": ["created", "updated", "deleted", "grade_changed", "status_changed"]
+        },
+        "hostname": { "type": "string" },
+        "ip": { "type": "string" },
+        "asset_type": { "type": "string" },
+        "business_units": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "environment": { "type": "string" },
+        "region": { "type": "string" },
+        "grade": { "type": "string", "enum": ["S", "A", "B", "C", "D"] },
+        "discovered_by": { "type": "string" },
+        "changed_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of field names that changed (for update events)"
+        },
+        "previous_values": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Previous values of changed fields"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

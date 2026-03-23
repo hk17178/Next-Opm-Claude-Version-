@@ -1,0 +1,162 @@
+_format_version: "3.0"
+
+services:
+  - name: svc-log
+    url: http://host.docker.internal:8081
+    routes:
+      - name: svc-log-route
+        paths:
+          - /api/v1/log
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600
+
+  - name: svc-alert
+    url: http://host.docker.internal:8082
+    routes:
+      - name: svc-alert-route
+        paths:
+          - /api/v1/alert
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600
+
+  - name: svc-incident
+    url: http://host.docker.internal:8083
+    routes:
+      - name: svc-incident-route
+        paths:
+          - /api/v1/incident
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600
+
+  - name: svc-cmdb
+    url: http://host.docker.internal:8084
+    routes:
+      - name: svc-cmdb-route
+        paths:
+          - /api/v1/cmdb
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600
+
+  - name: svc-notify
+    url: http://host.docker.internal:8085
+    routes:
+      - name: svc-notify-route
+        paths:
+          - /api/v1/notify
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600
+
+  - name: svc-ai
+    url: http://host.docker.internal:8086
+    routes:
+      - name: svc-ai-route
+        paths:
+          - /api/v1/ai
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600
+
+  - name: svc-analytics
+    url: http://host.docker.internal:8087
+    routes:
+      - name: svc-analytics-route
+        paths:
+          - /api/v1/analytics
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600
+
+  - name: frontend
+    url: http://host.docker.internal:3000
+    routes:
+      - name: frontend-route
+        paths:
+          - /
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+          headers: ["Accept", "Authorization", "Content-Type"]
+          credentials: true
+          max_age: 3600

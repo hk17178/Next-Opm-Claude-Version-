@@ -1,0 +1,50 @@
+# Sensitive data patterns for desensitization
+# Each pattern has a regex and a replacement mask
+
+patterns:
+  - name: password_field
+    regex: '(?i)(password|passwd|pwd)\s*[:=]\s*\S+'
+    replacement: '$1=***REDACTED***'
+
+  - name: api_key
+    regex: '(?i)(api[_-]?key|apikey|access[_-]?key|secret[_-]?key)\s*[:=]\s*\S+'
+    replacement: '$1=***REDACTED***'
+
+  - name: bearer_token
+    regex: '(?i)(bearer|token|authorization)\s*[:=]\s*[A-Za-z0-9_\-\.]+'
+    replacement: '$1=***REDACTED***'
+
+  - name: private_key_block
+    regex: '-----BEGIN\s+(RSA\s+)?PRIVATE KEY-----[\s\S]*?-----END\s+(RSA\s+)?PRIVATE KEY-----'
+    replacement: '***PRIVATE_KEY_REDACTED***'
+
+  - name: ip_address
+    regex: '\b(?:\d{1,3}\.){3}\d{1,3}\b'
+    replacement: '***IP***'
+
+  - name: email_address
+    regex: '[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
+    replacement: '***EMAIL***'
+
+  - name: phone_number
+    regex: '\b1[3-9]\d{9}\b'
+    replacement: '***PHONE***'
+
+  - name: id_card
+    regex: '\b\d{17}[\dXx]\b'
+    replacement: '***ID_CARD***'
+
+  - name: jdbc_url
+    regex: '(?i)jdbc:[a-z]+://[^\s]+'
+    replacement: '***JDBC_URL***'
+
+  - name: connection_string
+    regex: '(?i)(mongodb|redis|mysql|postgres|amqp)://[^\s]+'
+    replacement: '***CONN_STRING***'
+
+# Fields that should be completely removed from context
+blocked_fields:
+  - api_key_encrypted
+  - secret
+  - credential
+  - private_key

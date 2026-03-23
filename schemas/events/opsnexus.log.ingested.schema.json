@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsnexus.io/schemas/events/opsnexus.log.ingested.v1",
+  "title": "Log Ingested Event",
+  "description": "Emitted by svc-log when a log entry is successfully ingested and indexed.",
+  "type": "object",
+  "required": [
+    "specversion",
+    "id",
+    "type",
+    "source",
+    "time",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "CloudEvents specification version"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier"
+    },
+    "type": {
+      "type": "string",
+      "const": "opsnexus.log.ingested",
+      "description": "Event type"
+    },
+    "source": {
+      "type": "string",
+      "description": "Event source URI, e.g., /services/svc-log"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Event timestamp in RFC 3339 format"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "log_id",
+        "host_id",
+        "level",
+        "message",
+        "timestamp"
+      ],
+      "properties": {
+        "log_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique log entry identifier"
+        },
+        "host_id": {
+          "type": "string",
+          "description": "Originating host identifier (CMDB CI ID)"
+        },
+        "service_name": {
+          "type": "string",
+          "description": "Name of the service that produced the log"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["DEBUG", "INFO", "WARN", "ERROR", "FATAL"],
+          "description": "Log severity level"
+        },
+        "message": {
+          "type": "string",
+          "description": "Log message content"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Original log timestamp"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Key-value labels for filtering"
+        },
+        "trace_id": {
+          "type": "string",
+          "description": "OpenTelemetry trace ID for correlation"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsnexus.io/schemas/events/opsnexus.notify.sent.v1",
+  "title": "Notification Sent Event",
+  "description": "Emitted by svc-notify when a notification is dispatched through any channel (email, SMS, webhook, IM).",
+  "type": "object",
+  "required": [
+    "specversion",
+    "id",
+    "type",
+    "source",
+    "time",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "const": "opsnexus.notify.sent"
+    },
+    "source": {
+      "type": "string"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "notification_id",
+        "channel",
+        "status",
+        "sent_at"
+      ],
+      "properties": {
+        "notification_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique notification identifier"
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["email", "sms", "webhook", "dingtalk", "wecom", "feishu", "slack"],
+          "description": "Notification delivery channel"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["delivered", "failed", "pending_retry"],
+          "description": "Delivery status"
+        },
+        "sent_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "recipient": {
+          "type": "string",
+          "description": "Recipient identifier (email, phone, webhook URL, IM user/group)"
+        },
+        "trigger_event_id": {
+          "type": "string",
+          "description": "The event that triggered this notification"
+        },
+        "incident_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Related incident if applicable"
+        },
+        "alert_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Related alert if applicable"
+        },
+        "template_id": {
+          "type": "string",
+          "description": "Notification template used"
+        },
+        "retry_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of delivery attempts"
+        },
+        "error_message": {
+          "type": "string",
+          "description": "Error details if delivery failed"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

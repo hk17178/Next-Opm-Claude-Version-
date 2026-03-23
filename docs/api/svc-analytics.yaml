@@ -1,0 +1,554 @@
+openapi: 3.0.3
+info:
+  title: OpsNexus Analytics Service API
+  description: |
+    Metrics aggregation, dashboard, and reporting service.
+    Provides OLAP queries, time-series analysis, and scheduled reports.
+  version: 0.1.0
+  contact:
+    name: OpsNexus Team
+servers:
+  - url: /api/v1/analytics
+    description: API Gateway routed
+
+tags:
+  - name: queries
+    description: Ad-hoc analytics queries
+  - name: dashboards
+    description: Dashboard management
+  - name: reports
+    description: Scheduled report management
+  - name: metrics
+    description: Metric ingestion and retrieval
+
+paths:
+  /query:
+    post:
+      operationId: executeQuery
+      tags: [queries]
+      summary: Execute an analytics query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /metrics:
+    post:
+      operationId: ingestMetrics
+      tags: [metrics]
+      summary: Ingest metric data points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricIngestRequest'
+      responses:
+        '202':
+          description: Metrics accepted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /metrics/query:
+    post:
+      operationId: queryMetrics
+      tags: [metrics]
+      summary: Query time-series metrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricQueryRequest'
+      responses:
+        '200':
+          description: Metric query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricQueryResponse'
+
+  /dashboards:
+    get:
+      operationId: listDashboards
+      tags: [dashboards]
+      summary: List dashboards
+      parameters:
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Dashboard list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardListResponse'
+
+    post:
+      operationId: createDashboard
+      tags: [dashboards]
+      summary: Create a dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardCreateRequest'
+      responses:
+        '201':
+          description: Dashboard created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+
+  /dashboards/{dashboard_id}:
+    get:
+      operationId: getDashboard
+      tags: [dashboards]
+      summary: Get dashboard details
+      parameters:
+        - $ref: '#/components/parameters/DashboardId'
+      responses:
+        '200':
+          description: Dashboard details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      operationId: updateDashboard
+      tags: [dashboards]
+      summary: Update a dashboard
+      parameters:
+        - $ref: '#/components/parameters/DashboardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardUpdateRequest'
+      responses:
+        '200':
+          description: Dashboard updated
+
+    delete:
+      operationId: deleteDashboard
+      tags: [dashboards]
+      summary: Delete a dashboard
+      parameters:
+        - $ref: '#/components/parameters/DashboardId'
+      responses:
+        '204':
+          description: Dashboard deleted
+
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List scheduled reports
+      responses:
+        '200':
+          description: Report list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportListResponse'
+
+    post:
+      operationId: createReport
+      tags: [reports]
+      summary: Create a scheduled report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreateRequest'
+      responses:
+        '201':
+          description: Report created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+
+  /reports/{report_id}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Get report details and latest run
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Report details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+
+    delete:
+      operationId: deleteReport
+      tags: [reports]
+      summary: Delete a scheduled report
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '204':
+          description: Report deleted
+
+  /reports/{report_id}/run:
+    post:
+      operationId: runReport
+      tags: [reports]
+      summary: Manually trigger a report run
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '202':
+          description: Report run started
+
+components:
+  parameters:
+    DashboardId:
+      name: dashboard_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReportId:
+      name: report_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    QueryRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          description: SQL-like analytics query
+        time_range:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        limit:
+          type: integer
+          default: 1000
+
+    QueryResponse:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        total_rows:
+          type: integer
+        execution_time_ms:
+          type: integer
+
+    MetricIngestRequest:
+      type: object
+      required: [metrics]
+      properties:
+        metrics:
+          type: array
+          items:
+            type: object
+            required: [name, value, timestamp]
+            properties:
+              name:
+                type: string
+              value:
+                type: number
+              timestamp:
+                type: string
+                format: date-time
+              labels:
+                type: object
+                additionalProperties:
+                  type: string
+
+    MetricQueryRequest:
+      type: object
+      required: [metric_name, time_range]
+      properties:
+        metric_name:
+          type: string
+        time_range:
+          type: object
+          required: [start, end]
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        aggregation:
+          type: string
+          enum: [avg, sum, min, max, count, p50, p90, p95, p99]
+          default: avg
+        interval:
+          type: string
+          description: Aggregation interval (e.g., '1m', '5m', '1h', '1d')
+          default: '5m'
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+        group_by:
+          type: array
+          items:
+            type: string
+
+    MetricQueryResponse:
+      type: object
+      properties:
+        series:
+          type: array
+          items:
+            type: object
+            properties:
+              labels:
+                type: object
+                additionalProperties:
+                  type: string
+              data_points:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                      format: date-time
+                    value:
+                      type: number
+
+    Dashboard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        panels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Panel'
+        owner_id:
+          type: string
+        is_public:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Panel:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+          enum: [line_chart, bar_chart, pie_chart, table, stat, heatmap]
+        query:
+          type: string
+        position:
+          type: object
+          properties:
+            x:
+              type: integer
+            y:
+              type: integer
+            w:
+              type: integer
+            h:
+              type: integer
+
+    DashboardCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        panels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Panel'
+        is_public:
+          type: boolean
+          default: false
+
+    DashboardUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        panels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Panel'
+        is_public:
+          type: boolean
+
+    DashboardListResponse:
+      type: object
+      properties:
+        dashboards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dashboard'
+        next_page_token:
+          type: string
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        schedule:
+          type: string
+          description: Cron expression
+        query:
+          type: string
+        format:
+          type: string
+          enum: [pdf, csv, json]
+        recipients:
+          type: array
+          items:
+            type: string
+        last_run_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    ReportCreateRequest:
+      type: object
+      required: [name, schedule, query, format]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        schedule:
+          type: string
+        query:
+          type: string
+        format:
+          type: string
+          enum: [pdf, csv, json]
+        recipients:
+          type: array
+          items:
+            type: string
+
+    ReportListResponse:
+      type: object
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/Report'
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

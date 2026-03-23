@@ -1,0 +1,40 @@
+server:
+  port: 8084
+  grpc_port: 9085
+  mode: release
+
+postgres:
+  host: localhost
+  port: 5432
+  user: opm
+  password: opm_secret
+  database: opm_log
+  max_open_conns: 20
+  max_idle_conns: 5
+
+elasticsearch:
+  addresses:
+    - http://localhost:9200
+  index_prefix: opsnexus-log
+  bulk_size: 500
+  flush_interval: 5s
+
+kafka:
+  brokers:
+    - localhost:9092
+  consumer_topic: opm.log.ingest
+  produce_topic: opsnexus.log.ingested
+  consumer_group: svc-log-consumer
+
+log:
+  level: info
+  format: json
+
+ingest:
+  max_batch_size: 1000
+  flush_interval: 3s
+  sensitive_fields:
+    - password
+    - token
+    - secret
+    - authorization

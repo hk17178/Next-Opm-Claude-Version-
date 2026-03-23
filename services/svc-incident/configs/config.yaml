@@ -1,0 +1,41 @@
+server:
+  http_addr: ":8083"
+  grpc_addr: ":9083"
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 60s
+
+database:
+  host: ${OPSNEXUS_INCIDENT_DB_HOST:localhost}
+  port: ${OPSNEXUS_INCIDENT_DB_PORT:5432}
+  user: ${OPSNEXUS_INCIDENT_DB_USER:opsnexus}
+  password: ${OPSNEXUS_INCIDENT_DB_PASSWORD:opsnexus}
+  dbname: ${OPSNEXUS_INCIDENT_DB_NAME:incident_db}
+  sslmode: disable
+  max_open_conns: 25
+  max_idle_conns: 10
+  conn_max_lifetime: 5m
+
+kafka:
+  brokers: ${OPSNEXUS_KAFKA_BROKERS:localhost:9092}
+  consumer_group: svc-incident.alert-fired
+
+auth:
+  keycloak_url: ${OPSNEXUS_KEYCLOAK_URL:}
+  realm: ${OPSNEXUS_KEYCLOAK_REALM:opsnexus}
+
+health:
+  liveness_path: /healthz
+  readiness_path: /readyz
+
+escalation:
+  default_timeout_minutes: 15
+  levels:
+    - label: "Leader"
+      timeout_minutes: 15
+    - label: "Director"
+      timeout_minutes: 30
+    - label: "CTO"
+      timeout_minutes: 60
+
+log_level: info

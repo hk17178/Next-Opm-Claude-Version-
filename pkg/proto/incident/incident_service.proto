@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package opsnexus.incident;
+
+option go_package = "github.com/opsnexus/opsnexus/pkg/proto/incident";
+
+import "google/protobuf/timestamp.proto";
+import "pkg/proto/common/common.proto";
+
+// IncidentService provides synchronous RPC access to the incident domain.
+// Used by AI service (to enrich analysis with incident context) and
+// notification service (to fetch incident details for templating).
+service IncidentService {
+  // GetIncident retrieves a single incident by ID.
+  rpc GetIncident(GetIncidentRequest) returns (Incident);
+
+  // ListOpenIncidents returns currently open incidents.
+  rpc ListOpenIncidents(ListOpenIncidentsRequest) returns (ListOpenIncidentsResponse);
+
+  // AddTimelineEntry adds an entry to the incident timeline (used by AI, notify).
+  rpc AddTimelineEntry(AddTimelineEntryRequest) returns (AddTimelineEntryResponse);
+}
+
+message GetIncidentRequest {
+  string incident_id = 1;
+}
+
+message ListOpenIncidentsRequest {
+  string severity = 1; // Filter: P0, P1, P2, P3, P4
+  string assignee_id = 2;
+  opsnexus.common.PageRequest pagination = 3;
+}
+
+message ListOpenIncidentsResponse {
+  repeated Incident incidents = 1;
+  opsnexus.common.PageResponse pagination = 2;
+}
+
+message AddTimelineEntryRequest {
+  string incident_id = 1;
+  string type = 2; // comment, ai_analysis, notification, status_change
+  string content = 3;
+  string author_service = 4; // e.g., "svc-ai", "svc-notify"
+}
+
+message AddTimelineEntryResponse {
+  string entry_id = 1;
+}
+
+message Incident {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string severity = 4;
+  string status = 5;
+  string assignee_id = 6;
+  repeated string related_alert_ids = 7;
+  repeated string affected_ci_ids = 8;
+  repeated opsnexus.common.KeyValue labels = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  google.protobuf.Timestamp resolved_at = 12;
+}

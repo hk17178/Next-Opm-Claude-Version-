@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package opsnexus.ai;
+
+option go_package = "github.com/opsnexus/opsnexus/pkg/proto/ai";
+
+import "google/protobuf/timestamp.proto";
+import "pkg/proto/common/common.proto";
+
+// AIService provides synchronous RPC access to the AI domain.
+// Used by incident service (to request immediate analysis) and
+// analytics service (to request correlation analysis).
+service AIService {
+  // RequestAnalysis submits an analysis task and returns immediately with a task ID.
+  rpc RequestAnalysis(RequestAnalysisRequest) returns (RequestAnalysisResponse);
+
+  // GetAnalysisResult retrieves the result of a completed analysis.
+  rpc GetAnalysisResult(GetAnalysisResultRequest) returns (AnalysisResult);
+
+  // SearchKnowledge performs semantic search in the knowledge base.
+  rpc SearchKnowledge(SearchKnowledgeRequest) returns (SearchKnowledgeResponse);
+}
+
+message RequestAnalysisRequest {
+  string type = 1;              // root_cause, anomaly_detection, prediction, correlation, log_summary
+  string incident_id = 2;       // Optional: related incident
+  repeated string alert_ids = 3; // Optional: related alerts
+  opsnexus.common.TimeRange time_range = 4;
+  map<string, string> context = 5; // Additional context key-value pairs
+}
+
+message RequestAnalysisResponse {
+  string analysis_id = 1;
+  opsnexus.common.OperationStatus status = 2;
+}
+
+message GetAnalysisResultRequest {
+  string analysis_id = 1;
+}
+
+message AnalysisResult {
+  string analysis_id = 1;
+  string type = 2;
+  opsnexus.common.OperationStatus status = 3;
+  string summary = 4;
+  double confidence = 5;
+  repeated RootCause root_causes = 6;
+  repeated string recommendations = 7;
+  string model_version = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp completed_at = 10;
+}
+
+message RootCause {
+  string description = 1;
+  double probability = 2;
+  repeated string related_ci_ids = 3;
+}
+
+message SearchKnowledgeRequest {
+  string query = 1;
+  int32 top_k = 2;
+}
+
+message SearchKnowledgeResponse {
+  repeated KnowledgeResult results = 1;
+}
+
+message KnowledgeResult {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  double score = 4;
+  string category = 5;
+}

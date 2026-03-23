@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package opsnexus.common;
+
+option go_package = "github.com/opsnexus/opsnexus/pkg/proto/common";
+
+import "google/protobuf/timestamp.proto";
+
+// Pagination request parameters (cursor-based).
+message PageRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+// Pagination response metadata.
+message PageResponse {
+  string next_page_token = 1;
+  int64 total_count = 2;
+}
+
+// TimeRange specifies a start and end time for queries.
+message TimeRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}
+
+// KeyValue represents a generic label/tag pair.
+message KeyValue {
+  string key = 1;
+  string value = 2;
+}
+
+// OperationStatus represents common async operation outcomes.
+enum OperationStatus {
+  OPERATION_STATUS_UNSPECIFIED = 0;
+  OPERATION_STATUS_SUCCESS = 1;
+  OPERATION_STATUS_FAILED = 2;
+  OPERATION_STATUS_PARTIAL = 3;
+  OPERATION_STATUS_PENDING = 4;
+  OPERATION_STATUS_RUNNING = 5;
+}

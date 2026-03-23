@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsnexus.io/schemas/events/opsnexus.incident.created.v1",
+  "title": "Incident Created Event",
+  "description": "Emitted by svc-incident when a new incident is created (manually or auto-generated from alerts).",
+  "type": "object",
+  "required": [
+    "specversion",
+    "id",
+    "type",
+    "source",
+    "time",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "const": "opsnexus.incident.created"
+    },
+    "source": {
+      "type": "string"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "incident_id",
+        "title",
+        "severity",
+        "status",
+        "created_at"
+      ],
+      "properties": {
+        "incident_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique incident identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Incident title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed incident description"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3", "P4"],
+          "description": "Incident priority/severity"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "investigating", "identified", "mitigated", "resolved", "closed"],
+          "description": "Incident lifecycle status"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "assignee_id": {
+          "type": "string",
+          "description": "User ID of the assigned responder"
+        },
+        "related_alert_ids": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" },
+          "description": "Alert IDs that contributed to this incident"
+        },
+        "affected_ci_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "CMDB Configuration Item IDs affected"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

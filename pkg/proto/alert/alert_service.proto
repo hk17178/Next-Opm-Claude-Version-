@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package opsnexus.alert;
+
+option go_package = "github.com/opsnexus/opsnexus/pkg/proto/alert";
+
+import "google/protobuf/timestamp.proto";
+import "pkg/proto/common/common.proto";
+
+// AlertService provides synchronous RPC access to the alert domain.
+// Used by incident service (to fetch alert details when creating incidents)
+// and AI service (to get alert context for analysis).
+service AlertService {
+  // GetAlert retrieves a single alert by ID.
+  rpc GetAlert(GetAlertRequest) returns (Alert);
+
+  // ListActiveAlerts returns currently firing alerts, optionally filtered.
+  rpc ListActiveAlerts(ListActiveAlertsRequest) returns (ListActiveAlertsResponse);
+
+  // GetAlertRule retrieves an alert rule definition.
+  rpc GetAlertRule(GetAlertRuleRequest) returns (AlertRule);
+}
+
+message GetAlertRequest {
+  string alert_id = 1;
+}
+
+message ListActiveAlertsRequest {
+  string severity = 1; // Filter: critical, high, medium, low, info
+  string host_id = 2;  // Filter by affected host
+  opsnexus.common.PageRequest pagination = 3;
+}
+
+message ListActiveAlertsResponse {
+  repeated Alert alerts = 1;
+  opsnexus.common.PageResponse pagination = 2;
+}
+
+message GetAlertRuleRequest {
+  string rule_id = 1;
+}
+
+message Alert {
+  string id = 1;
+  string rule_id = 2;
+  string severity = 3;
+  string status = 4; // firing, acknowledged, resolved
+  string title = 5;
+  string description = 6;
+  google.protobuf.Timestamp fired_at = 7;
+  google.protobuf.Timestamp resolved_at = 8;
+  string host_id = 9;
+  string service_name = 10;
+  repeated opsnexus.common.KeyValue labels = 11;
+}
+
+message AlertRule {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string severity = 4;
+  string condition = 5;
+  bool enabled = 6;
+  repeated opsnexus.common.KeyValue labels = 7;
+}

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package opsnexus.notify;
+
+option go_package = "github.com/opsnexus/opsnexus/pkg/proto/notify";
+
+import "pkg/proto/common/common.proto";
+
+// NotifyService provides synchronous RPC access to the notification domain.
+// Used by incident service (to send immediate critical notifications) and
+// AI service (to dispatch analysis result notifications).
+service NotifyService {
+  // SendNotification dispatches a notification synchronously.
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+
+  // GetNotificationStatus checks the delivery status of a notification.
+  rpc GetNotificationStatus(GetNotificationStatusRequest) returns (NotificationStatus);
+}
+
+message SendNotificationRequest {
+  string channel = 1;          // email, sms, webhook, dingtalk, wecom, feishu, slack
+  repeated string recipients = 2;
+  string template_id = 3;
+  string subject = 4;
+  string body = 5;
+  map<string, string> variables = 6;
+  string priority = 7;        // critical, high, normal, low
+  string incident_id = 8;     // Optional: related incident
+  string alert_id = 9;        // Optional: related alert
+}
+
+message SendNotificationResponse {
+  string notification_id = 1;
+  opsnexus.common.OperationStatus status = 2;
+}
+
+message GetNotificationStatusRequest {
+  string notification_id = 1;
+}
+
+message NotificationStatus {
+  string notification_id = 1;
+  string channel = 2;
+  string status = 3; // delivered, failed, pending_retry
+  int32 retry_count = 4;
+  string error_message = 5;
+}

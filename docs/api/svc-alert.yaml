@@ -1,0 +1,467 @@
+openapi: 3.0.3
+info:
+  title: OpsNexus Alert Service API
+  description: |
+    Alert rule management, evaluation, and lifecycle service.
+    Evaluates rules against incoming logs/metrics and fires alerts.
+  version: 0.1.0
+  contact:
+    name: OpsNexus Team
+servers:
+  - url: /api/v1/alert
+    description: API Gateway routed
+
+tags:
+  - name: rules
+    description: Alert rule CRUD
+  - name: alerts
+    description: Alert instance management
+  - name: silences
+    description: Alert silence/mute management
+
+paths:
+  /rules:
+    get:
+      operationId: listRules
+      tags: [rules]
+      summary: List alert rules
+      parameters:
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: List of alert rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleListResponse'
+
+    post:
+      operationId: createRule
+      tags: [rules]
+      summary: Create a new alert rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleCreateRequest'
+      responses:
+        '201':
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /rules/{rule_id}:
+    get:
+      operationId: getRule
+      tags: [rules]
+      summary: Get alert rule details
+      parameters:
+        - $ref: '#/components/parameters/RuleId'
+      responses:
+        '200':
+          description: Rule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      operationId: updateRule
+      tags: [rules]
+      summary: Update an alert rule
+      parameters:
+        - $ref: '#/components/parameters/RuleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleUpdateRequest'
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+
+    delete:
+      operationId: deleteRule
+      tags: [rules]
+      summary: Delete an alert rule
+      parameters:
+        - $ref: '#/components/parameters/RuleId'
+      responses:
+        '204':
+          description: Rule deleted
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List active alerts
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, high, medium, low, info]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [firing, acknowledged, resolved]
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertListResponse'
+
+  /alerts/{alert_id}:
+    get:
+      operationId: getAlert
+      tags: [alerts]
+      summary: Get alert details
+      parameters:
+        - $ref: '#/components/parameters/AlertId'
+      responses:
+        '200':
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /alerts/{alert_id}/acknowledge:
+    post:
+      operationId: acknowledgeAlert
+      tags: [alerts]
+      summary: Acknowledge an alert
+      parameters:
+        - $ref: '#/components/parameters/AlertId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Alert acknowledged
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /alerts/{alert_id}/resolve:
+    post:
+      operationId: resolveAlert
+      tags: [alerts]
+      summary: Manually resolve an alert
+      parameters:
+        - $ref: '#/components/parameters/AlertId'
+      responses:
+        '200':
+          description: Alert resolved
+
+  /silences:
+    get:
+      operationId: listSilences
+      tags: [silences]
+      summary: List active silences
+      responses:
+        '200':
+          description: List of silences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SilenceListResponse'
+
+    post:
+      operationId: createSilence
+      tags: [silences]
+      summary: Create an alert silence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SilenceCreateRequest'
+      responses:
+        '201':
+          description: Silence created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Silence'
+
+components:
+  parameters:
+    RuleId:
+      name: rule_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AlertId:
+      name: alert_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    Rule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        condition:
+          type: string
+          description: Rule expression (e.g., 'count(level=ERROR) > 10 in 5m')
+        enabled:
+          type: boolean
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        notification_channels:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RuleCreateRequest:
+      type: object
+      required: [name, severity, condition]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        condition:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        notification_channels:
+          type: array
+          items:
+            type: string
+
+    RuleUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        condition:
+          type: string
+        enabled:
+          type: boolean
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        notification_channels:
+          type: array
+          items:
+            type: string
+
+    RuleListResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+        next_page_token:
+          type: string
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        status:
+          type: string
+          enum: [firing, acknowledged, resolved]
+        title:
+          type: string
+        description:
+          type: string
+        fired_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    AlertListResponse:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        next_page_token:
+          type: string
+
+    Silence:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        matchers:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+              is_regex:
+                type: boolean
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        comment:
+          type: string
+        created_by:
+          type: string
+
+    SilenceCreateRequest:
+      type: object
+      required: [matchers, starts_at, ends_at]
+      properties:
+        matchers:
+          type: array
+          items:
+            type: object
+            required: [label, value]
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+              is_regex:
+                type: boolean
+                default: false
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        comment:
+          type: string
+
+    SilenceListResponse:
+      type: object
+      properties:
+        silences:
+          type: array
+          items:
+            $ref: '#/components/schemas/Silence'
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

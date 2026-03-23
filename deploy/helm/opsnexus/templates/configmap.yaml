@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opsnexus-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "opsnexus.labels" . | nindent 4 }}
+data:
+  OPSNEXUS_KAFKA_BROKERS: {{ .Values.kafka.bootstrapServers | quote }}
+  OPSNEXUS_REDIS_URL: {{ .Values.redis.url | quote }}
+  OPSNEXUS_DB_SSLMODE: {{ .Values.database.sslmode | quote }}
+  OPSNEXUS_DOMAIN: {{ .Values.global.domain | quote }}
+  OPSNEXUS_LOG_LEVEL: "info"
+  OPSNEXUS_LOG_FORMAT: "json"

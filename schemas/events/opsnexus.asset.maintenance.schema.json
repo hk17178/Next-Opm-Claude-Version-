@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsnexus.io/schemas/events/opsnexus.asset.maintenance.v1",
+  "title": "Asset Maintenance Event",
+  "description": "Emitted by svc-cmdb when a maintenance window starts, ends, or is cancelled. Consumed by alert domain for suppression.",
+  "type": "object",
+  "required": ["specversion", "id", "type", "source", "time", "data"],
+  "properties": {
+    "specversion": { "type": "string", "const": "1.0" },
+    "id": { "type": "string", "format": "uuid" },
+    "type": { "type": "string", "const": "opsnexus.asset.maintenance" },
+    "source": { "type": "string" },
+    "time": { "type": "string", "format": "date-time" },
+    "datacontenttype": { "type": "string", "const": "application/json" },
+    "data": {
+      "type": "object",
+      "required": ["maintenance_id", "action", "name", "start_time", "end_time"],
+      "properties": {
+        "maintenance_id": { "type": "string", "format": "uuid" },
+        "action": {
+          "type": "string",
+          "enum": ["started", "ended", "cancelled"]
+        },
+        "name": { "type": "string" },
+        "assets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Directly associated asset IDs"
+        },
+        "asset_groups": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Associated asset group IDs"
+        },
+        "cascade_assets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Assets auto-suppressed via CMDB topology cascade (deployed_on/child_of)"
+        },
+        "start_time": { "type": "string", "format": "date-time" },
+        "end_time": { "type": "string", "format": "date-time" },
+        "change_order_id": { "type": "string" },
+        "created_by": {
+          "type": "object",
+          "properties": {
+            "user_id": { "type": "string" },
+            "name": { "type": "string" }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

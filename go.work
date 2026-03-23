@@ -1,0 +1,14 @@
+go 1.22.0
+
+use (
+	.
+	./services/svc-ai
+	./services/svc-alert
+	./services/svc-analytics
+	./services/svc-change
+	./services/svc-cmdb
+	./services/svc-incident
+	./services/svc-log
+	./services/svc-notify
+	./services/svc-orchestration
+)

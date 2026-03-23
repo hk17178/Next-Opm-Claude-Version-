@@ -1,0 +1,415 @@
+# =============================================================================
+# OpsNexus GitLab CI/CD Pipeline
+# Monorepo: 7 Go services + frontend (shell + 9 sub-apps)
+# =============================================================================
+
+stages:
+  - lint
+  - test
+  - build
+  - scan
+  - deploy-dev
+  - deploy-staging
+  - deploy-prod
+
+variables:
+  GO_VERSION: "1.22"
+  NODE_VERSION: "20"
+  DOCKER_REGISTRY: "${CI_REGISTRY}"
+  DOCKER_IMAGE_PREFIX: "${CI_REGISTRY_IMAGE}"
+  COVERAGE_THRESHOLD_GO: "70"
+  COVERAGE_THRESHOLD_FE: "60"
+
+# =============================================================================
+# YAML Anchors & Templates
+# =============================================================================
+
+# --- Path-based trigger rules ---
+.service-changes: &service-changes
+  changes:
+    - services/${SERVICE_NAME}/**/*
+    - pkg/**/*
+
+.frontend-changes: &frontend-changes
+  changes:
+    - frontend/**/*
+
+# --- Base templates ---
+.go-base:
+  image: golang:${GO_VERSION}
+  before_script:
+    - cd services/${SERVICE_NAME}
+  tags:
+    - docker
+
+.frontend-base:
+  image: node:${NODE_VERSION}
+  before_script:
+    - cd frontend
+    - npm ci --prefer-offline
+  tags:
+    - docker
+
+.deploy-base:
+  image: alpine/helm:latest
+  before_script:
+    - helm version
+  tags:
+    - docker
+
+# --- Go service job templates ---
+.go-lint-template:
+  extends: .go-base
+  stage: lint
+  script:
+    - golangci-lint run ./...
+  rules:
+    - <<: *service-changes
+
+.go-test-template:
+  extends: .go-base
+  stage: test
+  script:
+    - go test ./... -race -coverprofile=coverage.out
+    - go tool cover -func=coverage.out | grep total | awk '{print $3}'
+    - |
+      COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+      echo "Coverage: ${COVERAGE}%"
+      if [ "$(echo "${COVERAGE} < ${COVERAGE_THRESHOLD_GO}" | bc)" -eq 1 ]; then
+        echo "ERROR: Coverage ${COVERAGE}% is below threshold ${COVERAGE_THRESHOLD_GO}%"
+        exit 1
+      fi
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: services/${SERVICE_NAME}/coverage.out
+    expire_in: 7 days
+  rules:
+    - <<: *service-changes
+
+.go-build-template:
+  extends: .go-base
+  stage: build
+  script:
+    - CGO_ENABLED=0 GOOS=linux go build -o bin/server ./cmd/server
+    - >
+      docker build
+      -t ${DOCKER_IMAGE_PREFIX}/${SERVICE_NAME}:${CI_COMMIT_SHA}
+      -t ${DOCKER_IMAGE_PREFIX}/${SERVICE_NAME}:${CI_COMMIT_REF_SLUG}
+      -f Dockerfile ../..
+    - docker push ${DOCKER_IMAGE_PREFIX}/${SERVICE_NAME}:${CI_COMMIT_SHA}
+    - docker push ${DOCKER_IMAGE_PREFIX}/${SERVICE_NAME}:${CI_COMMIT_REF_SLUG}
+  rules:
+    - <<: *service-changes
+
+.trivy-scan-template:
+  stage: scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy image --severity HIGH,CRITICAL --exit-code 1 ${DOCKER_IMAGE_PREFIX}/${SERVICE_NAME}:${CI_COMMIT_SHA}
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+      changes:
+        - services/${SERVICE_NAME}/**/*
+        - pkg/**/*
+  allow_failure: false
+
+# =============================================================================
+# Go Services: svc-log
+# =============================================================================
+
+lint:svc-log:
+  extends: .go-lint-template
+  variables:
+    SERVICE_NAME: svc-log
+
+test:svc-log:
+  extends: .go-test-template
+  variables:
+    SERVICE_NAME: svc-log
+
+build:svc-log:
+  extends: .go-build-template
+  variables:
+    SERVICE_NAME: svc-log
+
+scan:svc-log:
+  extends: .trivy-scan-template
+  variables:
+    SERVICE_NAME: svc-log
+
+# =============================================================================
+# Go Services: svc-alert
+# =============================================================================
+
+lint:svc-alert:
+  extends: .go-lint-template
+  variables:
+    SERVICE_NAME: svc-alert
+
+test:svc-alert:
+  extends: .go-test-template
+  variables:
+    SERVICE_NAME: svc-alert
+
+build:svc-alert:
+  extends: .go-build-template
+  variables:
+    SERVICE_NAME: svc-alert
+
+scan:svc-alert:
+  extends: .trivy-scan-template
+  variables:
+    SERVICE_NAME: svc-alert
+
+# =============================================================================
+# Go Services: svc-incident
+# =============================================================================
+
+lint:svc-incident:
+  extends: .go-lint-template
+  variables:
+    SERVICE_NAME: svc-incident
+
+test:svc-incident:
+  extends: .go-test-template
+  variables:
+    SERVICE_NAME: svc-incident
+
+build:svc-incident:
+  extends: .go-build-template
+  variables:
+    SERVICE_NAME: svc-incident
+
+scan:svc-incident:
+  extends: .trivy-scan-template
+  variables:
+    SERVICE_NAME: svc-incident
+
+# =============================================================================
+# Go Services: svc-cmdb
+# =============================================================================
+
+lint:svc-cmdb:
+  extends: .go-lint-template
+  variables:
+    SERVICE_NAME: svc-cmdb
+
+test:svc-cmdb:
+  extends: .go-test-template
+  variables:
+    SERVICE_NAME: svc-cmdb
+
+build:svc-cmdb:
+  extends: .go-build-template
+  variables:
+    SERVICE_NAME: svc-cmdb
+
+scan:svc-cmdb:
+  extends: .trivy-scan-template
+  variables:
+    SERVICE_NAME: svc-cmdb
+
+# =============================================================================
+# Go Services: svc-notify
+# =============================================================================
+
+lint:svc-notify:
+  extends: .go-lint-template
+  variables:
+    SERVICE_NAME: svc-notify
+
+test:svc-notify:
+  extends: .go-test-template
+  variables:
+    SERVICE_NAME: svc-notify
+
+build:svc-notify:
+  extends: .go-build-template
+  variables:
+    SERVICE_NAME: svc-notify
+
+scan:svc-notify:
+  extends: .trivy-scan-template
+  variables:
+    SERVICE_NAME: svc-notify
+
+# =============================================================================
+# Go Services: svc-ai
+# =============================================================================
+
+lint:svc-ai:
+  extends: .go-lint-template
+  variables:
+    SERVICE_NAME: svc-ai
+
+test:svc-ai:
+  extends: .go-test-template
+  variables:
+    SERVICE_NAME: svc-ai
+
+build:svc-ai:
+  extends: .go-build-template
+  variables:
+    SERVICE_NAME: svc-ai
+
+scan:svc-ai:
+  extends: .trivy-scan-template
+  variables:
+    SERVICE_NAME: svc-ai
+
+# =============================================================================
+# Go Services: svc-analytics
+# =============================================================================
+
+lint:svc-analytics:
+  extends: .go-lint-template
+  variables:
+    SERVICE_NAME: svc-analytics
+
+test:svc-analytics:
+  extends: .go-test-template
+  variables:
+    SERVICE_NAME: svc-analytics
+
+build:svc-analytics:
+  extends: .go-build-template
+  variables:
+    SERVICE_NAME: svc-analytics
+
+scan:svc-analytics:
+  extends: .trivy-scan-template
+  variables:
+    SERVICE_NAME: svc-analytics
+
+# =============================================================================
+# Frontend: shell + 9 sub-apps
+# =============================================================================
+
+lint:frontend:
+  extends: .frontend-base
+  stage: lint
+  script:
+    - npx eslint 'shell/src/**' 'app-*/src/**' 'packages/*/src/**'
+  rules:
+    - <<: *frontend-changes
+
+test:frontend:
+  extends: .frontend-base
+  stage: test
+  script:
+    - npx vitest run --coverage
+    - |
+      COVERAGE=$(npx vitest run --coverage --reporter=json 2>/dev/null | grep -oP '"lines":\s*\K[\d.]+' || echo "0")
+      echo "Frontend coverage: ${COVERAGE}%"
+      if [ "$(echo "${COVERAGE} < ${COVERAGE_THRESHOLD_FE}" | bc)" -eq 1 ]; then
+        echo "ERROR: Frontend coverage ${COVERAGE}% is below threshold ${COVERAGE_THRESHOLD_FE}%"
+        exit 1
+      fi
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: frontend/coverage/cobertura-coverage.xml
+    expire_in: 7 days
+  rules:
+    - <<: *frontend-changes
+
+build:frontend:
+  extends: .frontend-base
+  stage: build
+  script:
+    - npx vite build
+    - >
+      docker build
+      -t ${DOCKER_IMAGE_PREFIX}/frontend:${CI_COMMIT_SHA}
+      -t ${DOCKER_IMAGE_PREFIX}/frontend:${CI_COMMIT_REF_SLUG}
+      .
+    - docker push ${DOCKER_IMAGE_PREFIX}/frontend:${CI_COMMIT_SHA}
+    - docker push ${DOCKER_IMAGE_PREFIX}/frontend:${CI_COMMIT_REF_SLUG}
+  rules:
+    - <<: *frontend-changes
+
+scan:frontend:
+  stage: scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy image --severity HIGH,CRITICAL --exit-code 1 ${DOCKER_IMAGE_PREFIX}/frontend:${CI_COMMIT_SHA}
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+      changes:
+        - frontend/**/*
+
+# =============================================================================
+# Deploy: Dev (auto on develop branch)
+# =============================================================================
+
+deploy:dev:
+  extends: .deploy-base
+  stage: deploy-dev
+  environment:
+    name: dev
+    url: https://dev.opsnexus.internal
+  script:
+    - >
+      helm upgrade --install opsnexus deploy/helm/opsnexus
+      --namespace opsnexus-dev --create-namespace
+      -f deploy/helm/opsnexus/values.yaml
+      -f deploy/helm/opsnexus/values-dev.yaml
+      --set global.image.tag=${CI_COMMIT_SHA}
+      --wait --timeout 5m
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+# =============================================================================
+# Deploy: Staging (manual trigger)
+# =============================================================================
+
+deploy:staging:
+  extends: .deploy-base
+  stage: deploy-staging
+  environment:
+    name: staging
+    url: https://staging.opsnexus.internal
+  script:
+    - >
+      helm upgrade --install opsnexus deploy/helm/opsnexus
+      --namespace opsnexus-staging --create-namespace
+      -f deploy/helm/opsnexus/values.yaml
+      -f deploy/helm/opsnexus/values-staging.yaml
+      --set global.image.tag=${CI_COMMIT_SHA}
+      --wait --timeout 5m
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^release\//'
+      when: manual
+
+# =============================================================================
+# Deploy: Prod (manual + protected, main branch only)
+# =============================================================================
+
+deploy:prod:
+  extends: .deploy-base
+  stage: deploy-prod
+  environment:
+    name: production
+    url: https://ops.company.com
+  script:
+    - >
+      helm upgrade --install opsnexus deploy/helm/opsnexus
+      --namespace opsnexus --create-namespace
+      -f deploy/helm/opsnexus/values.yaml
+      -f deploy/helm/opsnexus/values-prod.yaml
+      --set global.image.tag=${CI_COMMIT_SHA}
+      --wait --timeout 10m
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+  resource_group: production

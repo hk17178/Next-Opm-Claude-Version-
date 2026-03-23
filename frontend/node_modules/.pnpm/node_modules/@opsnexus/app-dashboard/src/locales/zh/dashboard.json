@@ -1,0 +1,34 @@
+{
+  "status.title": "OpsNexus NOC",
+  "status.activeAlerts": "活跃告警",
+  "status.activeIncidents": "活跃事件",
+  "status.normal": "正常",
+  "status.degraded": "异常",
+
+  "kpi.activeAlerts": "活跃告警数",
+  "kpi.todayEvents": "今日事件数",
+  "kpi.logVolume24h": "日志量 (24h)",
+  "kpi.serviceHealth": "服务健康率",
+
+  "alertTrend": "告警趋势 (近7天)",
+  "businessHealth": "业务健康矩阵",
+  "resourceCurves": "资源趋势曲线",
+  "miniCockpit": "事件驾驶舱精简版",
+
+  "recentAlerts.title": "最新未处理告警",
+  "recentAlerts.severity": "级别",
+  "recentAlerts.content": "告警内容",
+  "recentAlerts.source": "来源",
+  "recentAlerts.time": "触发时间",
+
+  "card.alertsToday": "今日告警",
+  "card.incidentsToday": "今日事件",
+  "card.resolved": "已解决",
+  "card.avgMTTR": "平均MTTR",
+
+  "alertWaterfall": "告警瀑布流",
+  "placeholder.alertStream": "实时告警流待集成 (WebSocket)",
+  "placeholder.healthMatrix": "业务健康矩阵待集成 (ECharts)",
+  "placeholder.resourceCharts": "资源曲线图待集成 (ECharts)",
+  "placeholder.cockpitMini": "驾驶舱精简版待集成"
+}

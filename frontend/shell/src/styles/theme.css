@@ -1,0 +1,143 @@
+/**
+ * 全局主题 CSS 变量
+ *
+ * 色彩系统参考 ON-003-附录A 色彩规范
+ * 支持深色(dark)/浅色(light)双主题 + 3 种信息密度模式
+ *
+ * 主题切换方式：在 <html> 上设置 data-theme 属性
+ * 密度切换方式：在 <html> 上设置 data-density 属性
+ */
+
+/* 深色主题（默认） */
+:root,
+[data-theme="dark"] {
+  --bg-primary: #060a12;
+  --bg-card: rgba(10,16,28,0.85);
+  --bg-panel: rgba(10,16,28,0.7);
+  --border-color: rgba(60,140,255,0.08);
+  --border-glow: rgba(77,166,255,0.3);
+  --text-primary: #b0c4de;
+  --text-secondary: rgba(140,170,210,0.6);
+  --text-muted: rgba(140,170,210,0.35);
+  --color-primary: #4da6ff;
+  --color-success: #00e5a0;
+  --color-warning: #ffaa33;
+  --color-danger: #ff6b6b;
+  --color-scan: rgba(77,166,255,0.5);
+  --color-flow-a: rgba(0,229,160,0.3);
+  --color-flow-b: rgba(77,166,255,0.3);
+  --color-particle: rgba(77,166,255,0.08);
+  --color-p0: #ff6b6b;
+  --color-p1: #ffaa33;
+  --color-p2: #60a5fa;
+  --color-p3: rgba(140,170,210,0.5);
+  --color-p0-bg: rgba(255,107,107,0.10);
+  --color-p1-bg: rgba(255,170,51,0.08);
+  --color-p2-bg: rgba(96,165,250,0.08);
+  --color-p3-bg: rgba(140,170,210,0.06);
+  --sidebar-bg: rgba(6,10,18,0.95);
+  --header-bg: rgba(6,10,18,0.95);
+  --header-border: rgba(60,140,255,0.08);
+  --table-header-bg: rgba(10,16,28,0.6);
+  --table-row-hover: rgba(77,166,255,0.04);
+  --table-border: rgba(60,140,255,0.06);
+  --input-bg: rgba(10,16,28,0.6);
+  --input-border: rgba(60,140,255,0.15);
+  --scrollbar-thumb: rgba(77,166,255,0.2);
+  --scrollbar-track: rgba(6,10,18,0.5);
+}
+
+/* 浅色主题 */
+[data-theme="light"] {
+  --bg-primary: #f4f7fc;
+  --bg-card: rgba(255,255,255,0.82);
+  --bg-panel: rgba(255,255,255,0.75);
+  --border-color: rgba(56,120,220,0.08);
+  --border-glow: rgba(37,99,235,0.3);
+  --text-primary: #2d3748;
+  --text-secondary: rgba(100,116,139,0.7);
+  --text-muted: rgba(100,116,139,0.45);
+  --color-primary: #2563eb;
+  --color-success: #059669;
+  --color-warning: #ea580c;
+  --color-danger: #dc2626;
+  --color-scan: rgba(37,99,235,0.25);
+  --color-flow-a: rgba(16,185,129,0.18);
+  --color-flow-b: rgba(37,99,235,0.18);
+  --color-particle: rgba(37,99,235,0.06);
+  --color-p0: #dc2626;
+  --color-p1: #ea580c;
+  --color-p2: #2563eb;
+  --color-p3: rgba(100,116,139,0.5);
+  --color-p0-bg: rgba(220,38,38,0.08);
+  --color-p1-bg: rgba(234,88,12,0.07);
+  --color-p2-bg: rgba(37,99,235,0.07);
+  --color-p3-bg: rgba(100,116,139,0.05);
+  --sidebar-bg: rgba(244,247,252,0.98);
+  --header-bg: rgba(244,247,252,0.98);
+  --header-border: rgba(56,120,220,0.10);
+  --table-header-bg: rgba(244,247,252,0.8);
+  --table-row-hover: rgba(37,99,235,0.04);
+  --table-border: rgba(56,120,220,0.06);
+  --input-bg: rgba(255,255,255,0.9);
+  --input-border: rgba(56,120,220,0.2);
+  --scrollbar-thumb: rgba(37,99,235,0.25);
+  --scrollbar-track: rgba(244,247,252,0.8);
+}
+
+/* 全局过渡动画（主题切换平滑） */
+*, *::before, *::after {
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* 排除动画元素（避免影响 canvas/svg 性能） */
+canvas, svg, [data-no-transition] {
+  transition: none !important;
+}
+
+/* body 基础样式 */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  font-family: Inter, "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* 密度模式 */
+[data-density="compact"]    { --row-height: 32px; --font-size-base: 12px; --card-gap: 8px; }
+:root, [data-density="normal"]     { --row-height: 40px; --font-size-base: 13px; --card-gap: 12px; }
+[data-density="comfortable"] { --row-height: 48px; --font-size-base: 14px; --card-gap: 16px; }
+
+/* 全局滚动条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+/* 侧边栏滚动条：默认隐藏，hover 时显示 */
+.shell-sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.shell-sidebar-nav:hover {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+.shell-sidebar-nav::-webkit-scrollbar-thumb {
+  background: transparent;
+  transition: background 0.2s;
+}
+.shell-sidebar-nav:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+
+/* 字体菜单组件样式（保留兼容） */
+.font-menu-item { display: flex; align-items: center; gap: 8px; }
+.font-menu-item__preview { font-size: 13px; }
+.font-menu-item__label { font-weight: 500; }
+.font-menu-item__desc { font-size: 12px; color: var(--text-muted); }
+.font-trigger-btn { display: flex; align-items: center; }

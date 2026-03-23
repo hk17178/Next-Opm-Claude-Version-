@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsnexus.io/schemas/events/opsnexus.alert.fired.v1",
+  "title": "Alert Fired Event",
+  "description": "Emitted by svc-alert when an alert rule condition is met and an alert is fired.",
+  "type": "object",
+  "required": [
+    "specversion",
+    "id",
+    "type",
+    "source",
+    "time",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "const": "opsnexus.alert.fired"
+    },
+    "source": {
+      "type": "string",
+      "description": "Event source URI, e.g., /services/svc-alert"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "alert_id",
+        "rule_id",
+        "severity",
+        "title",
+        "fired_at"
+      ],
+      "properties": {
+        "alert_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique alert instance identifier"
+        },
+        "rule_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Alert rule that triggered this alert"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"],
+          "description": "Alert severity level"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable alert title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed alert description"
+        },
+        "fired_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the alert condition was met"
+        },
+        "host_id": {
+          "type": "string",
+          "description": "Affected host identifier (CMDB CI ID)"
+        },
+        "service_name": {
+          "type": "string",
+          "description": "Affected service name"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Key-value labels for routing and grouping"
+        },
+        "trigger_values": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "The metric or log values that triggered the alert"
+        },
+        "source_event_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of source events (e.g., log IDs) that contributed to this alert"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,83 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opsnexus-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "opsnexus.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.global.domain }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.global.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+          - path: /api/v1/log
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-log
+                port:
+                  number: {{ (index .Values "svc-log").service.httpPort }}
+          - path: /api/v1/alert
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-alert
+                port:
+                  number: {{ (index .Values "svc-alert").service.httpPort }}
+          - path: /api/v1/incident
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-incident
+                port:
+                  number: {{ (index .Values "svc-incident").service.httpPort }}
+          - path: /api/v1/cmdb
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-cmdb
+                port:
+                  number: {{ (index .Values "svc-cmdb").service.httpPort }}
+          - path: /api/v1/notify
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-notify
+                port:
+                  number: {{ (index .Values "svc-notify").service.httpPort }}
+          - path: /api/v1/ai
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-ai
+                port:
+                  number: {{ (index .Values "svc-ai").service.httpPort }}
+          - path: /api/v1/analytics
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-analytics
+                port:
+                  number: {{ (index .Values "svc-analytics").service.httpPort }}
+{{- end }}

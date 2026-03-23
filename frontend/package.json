@@ -1,0 +1,20 @@
+{
+  "name": "@opsnexus/frontend",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n shell,dashboard,cockpit,alert,incident,log,cmdb,notify,analytics,settings -c cyan,blue,magenta,red,yellow,green,white,gray,orange,pink \"pnpm --filter @opsnexus/shell dev\" \"pnpm --filter @opsnexus/app-dashboard dev\" \"pnpm --filter @opsnexus/app-cockpit dev\" \"pnpm --filter @opsnexus/app-alert dev\" \"pnpm --filter @opsnexus/app-incident dev\" \"pnpm --filter @opsnexus/app-log dev\" \"pnpm --filter @opsnexus/app-cmdb dev\" \"pnpm --filter @opsnexus/app-notify dev\" \"pnpm --filter @opsnexus/app-analytics dev\" \"pnpm --filter @opsnexus/app-settings dev\"",
+    "dev:shell": "pnpm --filter @opsnexus/shell dev",
+    "build:all": "pnpm --filter './packages/**' build && pnpm --filter './app-*' build && pnpm --filter @opsnexus/shell build",
+    "test:all": "pnpm --filter './app-*' test && pnpm --filter @opsnexus/shell test && pnpm --filter @opsnexus/ui-kit test",
+    "test:coverage": "pnpm --filter './app-*' test -- --coverage",
+    "lint:all": "pnpm --filter './app-*' lint && pnpm --filter @opsnexus/shell lint",
+    "i18n:check": "i18next-scanner --config i18next-scanner.config.js"
+  },
+  "devDependencies": {
+    "pnpm": "^8.15.0",
+    "concurrently": "^8.2.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

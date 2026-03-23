@@ -1,0 +1,220 @@
+# =============================================================================
+# OpsNexus Helm Chart - Default Values
+# =============================================================================
+
+global:
+  domain: ops.company.com
+  image:
+    registry: registry.company.com/opsnexus
+    tag: latest
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  namespace: opsnexus
+
+# --- Database ---
+database:
+  host: postgres
+  port: 5432
+  sslmode: disable
+  # Per-service database names
+  databases:
+    svc-log: opm_log
+    svc-alert: opm_alert
+    svc-incident: opm_incident
+    svc-cmdb: opm_cmdb
+    svc-notify: opm_notify
+    svc-ai: opm_ai
+    svc-analytics: opm_analytics
+
+# --- Kafka ---
+kafka:
+  bootstrapServers: "kafka:9092"
+
+# --- Redis ---
+redis:
+  url: "redis://redis:6379/0"
+
+# --- Services ---
+svc-log:
+  enabled: true
+  replicas: 2
+  image:
+    repository: svc-log
+    tag: ""  # defaults to global.image.tag
+  service:
+    httpPort: 8084
+    grpcPort: 9084
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilization: 70
+
+svc-alert:
+  enabled: true
+  replicas: 2
+  image:
+    repository: svc-alert
+    tag: ""
+  service:
+    httpPort: 8081
+    grpcPort: 9081
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilization: 70
+
+svc-incident:
+  enabled: true
+  replicas: 2
+  image:
+    repository: svc-incident
+    tag: ""
+  service:
+    httpPort: 8082
+    grpcPort: 9082
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilization: 70
+
+svc-cmdb:
+  enabled: true
+  replicas: 2
+  image:
+    repository: svc-cmdb
+    tag: ""
+  service:
+    httpPort: 8083
+    grpcPort: 9083
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilization: 70
+
+svc-notify:
+  enabled: true
+  replicas: 2
+  image:
+    repository: svc-notify
+    tag: ""
+  service:
+    httpPort: 8085
+    grpcPort: 9085
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilization: 70
+
+svc-ai:
+  enabled: true
+  replicas: 2
+  image:
+    repository: svc-ai
+    tag: ""
+  service:
+    httpPort: 8086
+    grpcPort: 9086
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilization: 60
+
+svc-analytics:
+  enabled: true
+  replicas: 2
+  image:
+    repository: svc-analytics
+    tag: ""
+  service:
+    httpPort: 8087
+    grpcPort: 9087
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilization: 70
+
+# --- Frontend ---
+frontend:
+  enabled: true
+  replicas: 2
+  image:
+    repository: frontend
+    tag: ""
+  service:
+    port: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# --- Ingress ---
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  tls:
+    enabled: true
+    secretName: opsnexus-tls
+
+# --- Pod Anti-Affinity (enabled per environment) ---
+podAntiAffinity:
+  enabled: false

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsnexus.io/schemas/events/opsnexus.incident.updated.v1",
+  "title": "Incident Updated Event",
+  "description": "Emitted by svc-incident when an incident's status, severity, or assignment changes.",
+  "type": "object",
+  "required": ["specversion", "id", "type", "source", "time", "data"],
+  "properties": {
+    "specversion": { "type": "string", "const": "1.0" },
+    "id": { "type": "string", "format": "uuid" },
+    "type": { "type": "string", "const": "opsnexus.incident.updated" },
+    "source": { "type": "string" },
+    "time": { "type": "string", "format": "date-time" },
+    "datacontenttype": { "type": "string", "const": "application/json" },
+    "data": {
+      "type": "object",
+      "required": ["incident_id", "title", "severity", "previous_status", "new_status"],
+      "properties": {
+        "incident_id": { "type": "string", "description": "Unique incident identifier" },
+        "title": { "type": "string" },
+        "severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3", "P4"] },
+        "previous_status": {
+          "type": "string",
+          "enum": ["created", "triaging", "analyzing", "assigned", "resolving", "verifying", "resolved", "postmortem", "closed"]
+        },
+        "new_status": {
+          "type": "string",
+          "enum": ["created", "triaging", "analyzing", "assigned", "resolving", "verifying", "resolved", "postmortem", "closed"]
+        },
+        "assignee": {
+          "type": "object",
+          "properties": {
+            "user_id": { "type": "string" },
+            "name": { "type": "string" }
+          }
+        },
+        "update_type": {
+          "type": "string",
+          "enum": ["status_change", "assignment", "escalation", "severity_change"]
+        },
+        "update_source": { "type": "string", "enum": ["system", "human"] },
+        "update_note": { "type": "string" },
+        "business_unit": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

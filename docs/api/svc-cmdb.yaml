@@ -1,0 +1,447 @@
+openapi: 3.0.3
+info:
+  title: OpsNexus CMDB Service API
+  description: |
+    Configuration Management Database service.
+    Manages configuration items (CIs), relationships, and topology discovery.
+  version: 0.1.0
+  contact:
+    name: OpsNexus Team
+servers:
+  - url: /api/v1/cmdb
+    description: API Gateway routed
+
+tags:
+  - name: ci
+    description: Configuration Item management
+  - name: relationships
+    description: CI relationship management
+  - name: topology
+    description: Topology queries
+  - name: ci-types
+    description: CI type/model definitions
+
+paths:
+  /ci:
+    get:
+      operationId: listCIs
+      tags: [ci]
+      summary: List configuration items
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter by CI type (e.g., host, service, database)
+        - name: label_selector
+          in: query
+          schema:
+            type: string
+          description: Label selector (e.g., 'env=prod,team=platform')
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: List of CIs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CIListResponse'
+
+    post:
+      operationId: createCI
+      tags: [ci]
+      summary: Create a configuration item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CICreateRequest'
+      responses:
+        '201':
+          description: CI created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CI'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: CI with same unique key already exists
+
+  /ci/{ci_id}:
+    get:
+      operationId: getCI
+      tags: [ci]
+      summary: Get CI details
+      parameters:
+        - $ref: '#/components/parameters/CIId'
+      responses:
+        '200':
+          description: CI details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CI'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      operationId: updateCI
+      tags: [ci]
+      summary: Update a CI
+      parameters:
+        - $ref: '#/components/parameters/CIId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CIUpdateRequest'
+      responses:
+        '200':
+          description: CI updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CI'
+
+    delete:
+      operationId: deleteCI
+      tags: [ci]
+      summary: Delete a CI
+      parameters:
+        - $ref: '#/components/parameters/CIId'
+      responses:
+        '204':
+          description: CI deleted
+
+  /ci/{ci_id}/relationships:
+    get:
+      operationId: getCIRelationships
+      tags: [relationships]
+      summary: Get relationships for a CI
+      parameters:
+        - $ref: '#/components/parameters/CIId'
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [upstream, downstream, both]
+            default: both
+      responses:
+        '200':
+          description: CI relationships
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationshipListResponse'
+
+  /relationships:
+    post:
+      operationId: createRelationship
+      tags: [relationships]
+      summary: Create a relationship between CIs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelationshipCreateRequest'
+      responses:
+        '201':
+          description: Relationship created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Relationship'
+
+  /relationships/{relationship_id}:
+    delete:
+      operationId: deleteRelationship
+      tags: [relationships]
+      summary: Delete a relationship
+      parameters:
+        - name: relationship_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Relationship deleted
+
+  /topology:
+    post:
+      operationId: queryTopology
+      tags: [topology]
+      summary: Query topology graph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopologyQuery'
+      responses:
+        '200':
+          description: Topology graph
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopologyResponse'
+
+  /ci-types:
+    get:
+      operationId: listCITypes
+      tags: [ci-types]
+      summary: List available CI types
+      responses:
+        '200':
+          description: CI type definitions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CITypeListResponse'
+
+components:
+  parameters:
+    CIId:
+      name: ci_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    CI:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          description: CI type (host, service, database, network_device, etc.)
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, decommissioned, maintenance]
+        attributes:
+          type: object
+          additionalProperties: true
+          description: Type-specific attributes
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        owner_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CICreateRequest:
+      type: object
+      required: [type, name]
+      properties:
+        type:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        owner_id:
+          type: string
+
+    CIUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, decommissioned, maintenance]
+        attributes:
+          type: object
+          additionalProperties: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        owner_id:
+          type: string
+
+    CIListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CI'
+        next_page_token:
+          type: string
+
+    Relationship:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        source_ci_id:
+          type: string
+          format: uuid
+        target_ci_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [depends_on, runs_on, connects_to, member_of, contains]
+        attributes:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    RelationshipCreateRequest:
+      type: object
+      required: [source_ci_id, target_ci_id, type]
+      properties:
+        source_ci_id:
+          type: string
+          format: uuid
+        target_ci_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [depends_on, runs_on, connects_to, member_of, contains]
+        attributes:
+          type: object
+          additionalProperties: true
+
+    RelationshipListResponse:
+      type: object
+      properties:
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relationship'
+
+    TopologyQuery:
+      type: object
+      required: [root_ci_id]
+      properties:
+        root_ci_id:
+          type: string
+          format: uuid
+        depth:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+        direction:
+          type: string
+          enum: [upstream, downstream, both]
+          default: both
+        ci_type_filter:
+          type: array
+          items:
+            type: string
+
+    TopologyResponse:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CI'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relationship'
+
+    CIType:
+      type: object
+      properties:
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        attribute_schema:
+          type: object
+          description: JSON Schema for type-specific attributes
+
+    CITypeListResponse:
+      type: object
+      properties:
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/CIType'
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

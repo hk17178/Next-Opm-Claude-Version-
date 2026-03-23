@@ -1,0 +1,3 @@
+{{- if (index .Values "svc-ai").enabled }}
+{{- include "opsnexus.deployment" (dict "svcName" "svc-ai" "svcValues" (index .Values "svc-ai") "context" .) }}
+{{- end }}

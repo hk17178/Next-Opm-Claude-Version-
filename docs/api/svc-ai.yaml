@@ -1,0 +1,432 @@
+openapi: 3.0.3
+info:
+  title: OpsNexus AI Service API
+  description: |
+    Intelligent analysis service.
+    Provides root cause analysis, anomaly detection, prediction, and log summarization.
+  version: 0.1.0
+  contact:
+    name: OpsNexus Team
+servers:
+  - url: /api/v1/ai
+    description: API Gateway routed
+
+tags:
+  - name: analysis
+    description: AI analysis tasks
+  - name: knowledge
+    description: Knowledge base management
+  - name: models
+    description: Model management
+
+paths:
+  /analysis:
+    post:
+      operationId: createAnalysis
+      tags: [analysis]
+      summary: Submit an AI analysis task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisCreateRequest'
+      responses:
+        '202':
+          description: Analysis task accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+    get:
+      operationId: listAnalyses
+      tags: [analysis]
+      summary: List analysis tasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, running, success, partial, failed]
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [root_cause, anomaly_detection, prediction, correlation, log_summary]
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Analysis task list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisListResponse'
+
+  /analysis/{analysis_id}:
+    get:
+      operationId: getAnalysis
+      tags: [analysis]
+      summary: Get analysis task result
+      parameters:
+        - $ref: '#/components/parameters/AnalysisId'
+      responses:
+        '200':
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisTask'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /analysis/{analysis_id}/feedback:
+    post:
+      operationId: submitFeedback
+      tags: [analysis]
+      summary: Submit feedback on analysis result
+      parameters:
+        - $ref: '#/components/parameters/AnalysisId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+      responses:
+        '200':
+          description: Feedback recorded
+
+  /knowledge:
+    get:
+      operationId: listKnowledge
+      tags: [knowledge]
+      summary: List knowledge base entries
+      parameters:
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Knowledge entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeListResponse'
+
+    post:
+      operationId: createKnowledge
+      tags: [knowledge]
+      summary: Add a knowledge base entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeCreateRequest'
+      responses:
+        '201':
+          description: Knowledge entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeEntry'
+
+  /knowledge/search:
+    post:
+      operationId: searchKnowledge
+      tags: [knowledge]
+      summary: Semantic search in knowledge base
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                top_k:
+                  type: integer
+                  default: 10
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeSearchResponse'
+
+  /models:
+    get:
+      operationId: listModels
+      tags: [models]
+      summary: List available AI models
+      responses:
+        '200':
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelListResponse'
+
+components:
+  parameters:
+    AnalysisId:
+      name: analysis_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    AnalysisCreateRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [root_cause, anomaly_detection, prediction, correlation, log_summary]
+        incident_id:
+          type: string
+          format: uuid
+        alert_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        time_range:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        context:
+          type: object
+          additionalProperties: true
+          description: Additional context for the analysis
+
+    AnalysisTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [root_cause, anomaly_detection, prediction, correlation, log_summary]
+        status:
+          type: string
+          enum: [pending, running, success, partial, failed]
+        incident_id:
+          type: string
+          format: uuid
+        result:
+          type: object
+          properties:
+            summary:
+              type: string
+            confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+            root_causes:
+              type: array
+              items:
+                type: object
+                properties:
+                  description:
+                    type: string
+                  probability:
+                    type: number
+                  related_ci_ids:
+                    type: array
+                    items:
+                      type: string
+            recommendations:
+              type: array
+              items:
+                type: string
+            anomalies:
+              type: array
+              items:
+                type: object
+                properties:
+                  metric:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  expected_value:
+                    type: number
+                  actual_value:
+                    type: number
+                  severity:
+                    type: string
+        model_version:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    AnalysisListResponse:
+      type: object
+      properties:
+        analyses:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalysisTask'
+        next_page_token:
+          type: string
+
+    FeedbackRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        helpful:
+          type: boolean
+        comment:
+          type: string
+        correct_root_cause:
+          type: string
+
+    KnowledgeEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    KnowledgeCreateRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    KnowledgeListResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnowledgeEntry'
+        next_page_token:
+          type: string
+
+    KnowledgeSearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              entry:
+                $ref: '#/components/schemas/KnowledgeEntry'
+              score:
+                type: number
+
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum: [active, deprecated]
+
+    ModelListResponse:
+      type: object
+      properties:
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

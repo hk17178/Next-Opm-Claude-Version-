@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find 'd:/AI Project/Next Opm/' -type f -name *.md)",
+      "Bash(ls -d \"d:/AI Project/Next Opm/services/\"*/)",
+      "Bash(find 'd:/AI Project/Next Opm' -path */pkg/* -type f)",
+      "Bash(ls -d \"d:/AI Project/Next Opm/services/svc-\"*/)",
+      "Bash(go work:*)",
+      "Bash(cat ~/.claude/teams/*.json)",
+      "Bash(ls \"d:/AI Project/Next Opm/services/svc-alert/internal/biz/\"*_test.go)",
+      "Bash(find 'd:/AI Project/Next Opm/pkg' -name *.go ! -name *_test.go)",
+      "Bash(find 'd:/AI Project/Next Opm/services' -name main.go -o -path */config/config.go)",
+      "Bash(xargs -I{} find {} -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(done)",
+      "Bash(xargs wc:*)",
+      "Bash(xargs ls:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ]
+  }
+}
