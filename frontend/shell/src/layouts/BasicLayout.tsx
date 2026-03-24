@@ -210,8 +210,6 @@ const BasicLayout: React.FC = () => {
     { key: '14', label: '大' },
     { key: '16', label: '特大' },
   ];
-  const [fontDropOpen, setFontDropOpen] = useState(false);
-  const [langDropOpen, setLangDropOpen] = useState(false);
   const [globalFontSize, setGlobalFontSize] = useState<string>(() => {
     try { return localStorage.getItem(FONT_SIZE_KEY) || '13'; } catch { return '13'; }
   });
@@ -358,19 +356,13 @@ const BasicLayout: React.FC = () => {
 
           {/* 全局字体大小调节 */}
           <Dropdown
-            open={fontDropOpen}
-            onOpenChange={setFontDropOpen}
             trigger={['click']}
             menu={{
               items: FONT_SIZES.map((fs) => ({
                 key: fs.key,
-                label: (
-                  <span style={{ fontWeight: globalFontSize === fs.key ? 700 : 400 }}>
-                    {globalFontSize === fs.key ? '✓ ' : '   '}{fs.label}
-                  </span>
-                ),
+                label: `${globalFontSize === fs.key ? '✓ ' : '   '}${fs.label}`,
               })),
-              onClick: ({ key }) => { setGlobalFontSize(key); setFontDropOpen(false); },
+              onClick: ({ key }) => setGlobalFontSize(key),
             }}
             placement="bottomRight"
           >
@@ -395,15 +387,13 @@ const BasicLayout: React.FC = () => {
 
           {/* 语言切换 */}
           <Dropdown
-            open={langDropOpen}
-            onOpenChange={setLangDropOpen}
             trigger={['click']}
             menu={{
               items: [
                 { key: 'zh', label: '中文' },
                 { key: 'en', label: 'English' },
               ],
-              onClick: ({ key }) => { i18n.changeLanguage(key); setLangDropOpen(false); },
+              onClick: ({ key }) => i18n.changeLanguage(key),
             }}
           >
             <Button
