@@ -8,6 +8,10 @@ import enAnalytics from './locales/en/analytics.json';
 import SLAReport from './pages/SLAReport';
 import SLADashboard from './pages/SLADashboard';
 import MetricsReport from './pages/MetricsReport';
+import CorrelationAnalysis from './pages/CorrelationAnalysis';
+import ReportCenter from './pages/ReportCenter';
+import AuditAnalytics from './pages/AuditAnalytics';
+import KnowledgeBase from './pages/KnowledgeBase';
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { ConfigProvider } from 'antd';
 import { useSubAppTheme } from '@opsnexus/ui-kit';
@@ -33,9 +37,11 @@ const App: React.FC = () => (
   <Routes>
     <Route path="/sla" element={<SLAReport />} />
     <Route path="/sla-dashboard" element={<SLADashboard />} />
-    <Route path="/correlation" element={<MetricsReport />} />
-    <Route path="/reports" element={<div />} />
-    <Route path="/knowledge" element={<div />} />
+    <Route path="/correlation" element={<CorrelationAnalysis />} />
+    <Route path="/reports" element={<ReportCenter />} />
+    <Route path="/knowledge" element={<KnowledgeBase />} />
+    <Route path="/audit/analytics" element={<AuditAnalytics />} />
+    <Route path="/metrics" element={<MetricsReport />} />
     <Route path="/" element={<Navigate to="/sla-dashboard" replace />} />
   </Routes>
 );

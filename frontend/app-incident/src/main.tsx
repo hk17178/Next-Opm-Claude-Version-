@@ -13,6 +13,8 @@ import ChangeCalendar from './pages/ChangeCalendar';
 import WorkflowList from './pages/WorkflowList';
 import WorkflowEditor from './pages/WorkflowEditor';
 import WorkflowExecutions from './pages/WorkflowExecutions';
+import IncidentAnalytics from './pages/IncidentAnalytics';
+import OnCallSchedule from './pages/OnCallSchedule';
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { ConfigProvider } from 'antd';
 import { useSubAppTheme } from '@opsnexus/ui-kit';
@@ -45,6 +47,8 @@ const App: React.FC = () => (
     <Route path="/workflows/new" element={<WorkflowEditor />} />
     <Route path="/workflows/:id/edit" element={<WorkflowEditor />} />
     <Route path="/workflows/:id/executions" element={<WorkflowExecutions />} />
+    <Route path="/analytics" element={<IncidentAnalytics />} />
+    <Route path="/schedules" element={<OnCallSchedule />} />
     <Route path="/" element={<Navigate to="/list" replace />} />
   </Routes>
 );

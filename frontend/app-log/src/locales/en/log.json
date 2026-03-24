@@ -36,5 +36,17 @@
   "analysis.dimension.keyword": "By Keyword",
   "analysis.volume": "Volume Trend",
   "analysis.audit": "Audit Query",
-  "analysis.retention": "Retention Policy"
+  "analysis.retention": "Retention Policy",
+  "analysis.errorTop10": "Error Log TOP10 Clusters",
+  "analysis.keywords": "Keyword Cloud",
+  "analysis.anomaly": "Anomaly Detection Timeline",
+  "analysis.normalPoint": "Normal",
+  "analysis.anomalyPoint": "Anomaly",
+  "analysis.noErrors": "No error log cluster data",
+  "analysis.cluster.pattern": "Error Pattern",
+  "analysis.cluster.count": "Occurrences",
+  "analysis.cluster.firstSeen": "First Seen",
+  "analysis.cluster.lastSeen": "Last Seen",
+  "analysis.cluster.service": "Source Service",
+  "analysis.cluster.level": "Level"
 }

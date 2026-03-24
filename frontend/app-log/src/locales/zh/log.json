@@ -36,5 +36,17 @@
   "analysis.dimension.keyword": "按关键字",
   "analysis.volume": "日志量趋势",
   "analysis.audit": "审计查询",
-  "analysis.retention": "留存策略"
+  "analysis.retention": "留存策略",
+  "analysis.errorTop10": "错误日志 TOP10 聚类",
+  "analysis.keywords": "关键词云",
+  "analysis.anomaly": "异常检测时间线",
+  "analysis.normalPoint": "正常",
+  "analysis.anomalyPoint": "异常",
+  "analysis.noErrors": "暂无错误日志聚类数据",
+  "analysis.cluster.pattern": "错误模式",
+  "analysis.cluster.count": "出现次数",
+  "analysis.cluster.firstSeen": "首次出现",
+  "analysis.cluster.lastSeen": "最近出现",
+  "analysis.cluster.service": "来源服务",
+  "analysis.cluster.level": "级别"
 }

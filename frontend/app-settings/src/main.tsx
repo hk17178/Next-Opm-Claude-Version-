@@ -13,6 +13,14 @@ import MFASetup from './pages/MFASetup';
 import SessionManagement from './pages/SessionManagement';
 import IPWhitelist from './pages/IPWhitelist';
 import SetupWizard from './pages/SetupWizard';
+import RBACManagement from './pages/RBACManagement';
+import ClusterManagement from './pages/ClusterManagement';
+import VersionManagement from './pages/VersionManagement';
+import DataExport from './pages/DataExport';
+import BrandSettings from './pages/BrandSettings';
+import LoginPolicy from './pages/LoginPolicy';
+import WebhookManagement from './pages/WebhookManagement';
+import LDAPConfig from './pages/LDAPConfig';
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { ConfigProvider } from 'antd';
 import { useSubAppTheme } from '@opsnexus/ui-kit';
@@ -36,7 +44,8 @@ const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const App: React.FC = () => (
   <Routes>
-    <Route path="/rbac" element={<UserManagement />} />
+    <Route path="/rbac" element={<RBACManagement />} />
+    <Route path="/users" element={<UserManagement />} />
     <Route path="/ldap" element={<SystemConfig />} />
     <Route path="/ai-models" element={<Settings />} />
     <Route path="/prompts" element={<div />} />
@@ -46,6 +55,14 @@ const App: React.FC = () => (
     <Route path="/sessions" element={<SessionManagement />} />
     <Route path="/ip-whitelist" element={<IPWhitelist />} />
     <Route path="/setup" element={<SetupWizard />} />
+    <Route path="/cluster" element={<ClusterManagement />} />
+    <Route path="/version" element={<VersionManagement />} />
+    <Route path="/data-export" element={<DataExport />} />
+    <Route path="/brand" element={<BrandSettings />} />
+    <Route path="/login-policy" element={<LoginPolicy />} />
+    <Route path="/security" element={<LoginPolicy />} />
+    <Route path="/webhooks" element={<WebhookManagement />} />
+    <Route path="/ldap-config" element={<LDAPConfig />} />
     <Route path="/" element={<Navigate to="/ai-models" replace />} />
   </Routes>
 );

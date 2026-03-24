@@ -8,6 +8,9 @@ import enAlert from './locales/en/alert.json';
 import AlertList from './pages/AlertList';
 import AlertRules from './pages/AlertRules';
 import AlertDetailPage from './pages/AlertDetail';
+import AlertAnalytics from './pages/AlertAnalytics';
+import AlertBaselines from './pages/AlertBaselines';
+import AlertNoiseReduction from './pages/AlertNoiseReduction';
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { ConfigProvider } from 'antd';
 import { useSubAppTheme } from '@opsnexus/ui-kit';
@@ -35,6 +38,9 @@ const App: React.FC = () => {
       <Route path="/list" element={<AlertList />} />
       <Route path="/rules" element={<AlertRules />} />
       <Route path="/detail/:id" element={<AlertDetailPage />} />
+      <Route path="/analytics" element={<AlertAnalytics />} />
+      <Route path="/baselines" element={<AlertBaselines />} />
+      <Route path="/noise-reduction" element={<AlertNoiseReduction />} />
       <Route path="/" element={<Navigate to="/list" replace />} />
     </Routes>
   );

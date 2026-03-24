@@ -6,6 +6,9 @@ import i18n from 'i18next';
 import zhCmdb from './locales/zh/cmdb.json';
 import enCmdb from './locales/en/cmdb.json';
 import AssetList from './pages/AssetList';
+import AssetOverview from './pages/AssetOverview';
+import AssetGroups from './pages/AssetGroups';
+import AssetDiscovery from './pages/AssetDiscovery';
 import Topology from './pages/Topology';
 import { renderWithQiankun, qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { ConfigProvider } from 'antd';
@@ -31,8 +34,10 @@ const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 const App: React.FC = () => (
   <Routes>
     <Route path="/assets" element={<AssetList />} />
-    <Route path="/groups" element={<Topology />} />
-    <Route path="/discovery" element={<div />} />
+    <Route path="/overview" element={<AssetOverview />} />
+    <Route path="/groups" element={<AssetGroups />} />
+    <Route path="/topology" element={<Topology />} />
+    <Route path="/discovery" element={<AssetDiscovery />} />
     <Route path="/" element={<Navigate to="/assets" replace />} />
   </Routes>
 );

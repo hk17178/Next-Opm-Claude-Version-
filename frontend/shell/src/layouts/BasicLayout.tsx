@@ -171,6 +171,7 @@ const menuGroups: MenuGroup[] = [
       { key: 'settings-ldap',               path: '/settings/ldap',               nameKey: 'menu.settings.ldap',              icon: <ClusterOutlined /> },
       { key: 'settings-identity-providers', path: '/settings/identity-providers', nameKey: 'menu.settings.identityProviders', icon: <UserSwitchOutlined /> },
       { key: 'settings-security',           path: '/settings/security',           nameKey: 'menu.settings.security',          icon: <LockOutlined /> },
+      { key: 'settings-ldap-config',        path: '/settings/ldap-config',        nameKey: 'menu.settings.ldapConfig',        icon: <ClusterOutlined /> },
       { key: 'settings-ai-models',          path: '/settings/ai-models',          nameKey: 'menu.settings.aiModels',          icon: <RobotOutlined /> },
       { key: 'settings-prompts',            path: '/settings/prompts',            nameKey: 'menu.settings.prompts',           icon: <EditOutlined /> },
       { key: 'settings-brand',              path: '/settings/brand',              nameKey: 'menu.settings.brand',             icon: <SkinOutlined /> },
