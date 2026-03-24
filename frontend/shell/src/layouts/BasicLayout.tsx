@@ -67,12 +67,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useDensity } from '../hooks/useDensity';
 import NotificationBell from '../components/NotificationBell';
 import ConnectionIndicator from '../components/ConnectionIndicator';
-
-// ParticleCanvas 占位：待 @opsnexus/ui-kit 导出后自动生效
-let ParticleCanvas: React.FC<{ isDark?: boolean }> | null = null;
-try {
-  ParticleCanvas = require('@opsnexus/ui-kit').ParticleCanvas;
-} catch { /* not ready yet */ }
+import { ParticleCanvas } from '@opsnexus/ui-kit';
 
 /* ─── 菜单数据结构 ─── */
 
@@ -241,11 +236,9 @@ const BasicLayout: React.FC = () => {
       <ConnectionIndicator connected={wsConnected} />
 
       {/* 粒子网络背景 */}
-      {ParticleCanvas && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-          <ParticleCanvas isDark={isDark} />
-        </div>
-      )}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <ParticleCanvas isDark={isDark} />
+      </div>
 
       {/* ─── Header ─── */}
       <header

@@ -1,11 +1,15 @@
 import React, { useRef, useEffect } from 'react';
 
 interface RingGaugeProps {
+  /** 当前值 */
   value: number;
+  /** 最大值，默认 100 */
   max?: number;
-  label?: string;
+  /** 画布尺寸(px)，默认 110 */
   size?: number;
+  /** 弧线宽度(px)，默认 5 */
   strokeWidth?: number;
+  /** 渐变起止色 [start, end]，默认 ['#00e5a0', '#4da6ff'] */
   colors?: [string, string];
 }
 
@@ -13,12 +17,17 @@ function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
+/**
+ * 环形仪表盘 — 严格匹配 demo drawR() 函数
+ *
+ * 只绘制背景轨道 + 渐变弧线，中心文字由调用方用 DOM 覆盖层实现
+ * （demo 使用 .ring-lb 做 DOM 文字，不在 canvas 上绘制文字）
+ */
 export const RingGauge: React.FC<RingGaugeProps> = ({
   value,
   max = 100,
-  label,
   size = 110,
-  strokeWidth = 8,
+  strokeWidth = 5,
   colors = ['#00e5a0', '#4da6ff'],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,22 +61,20 @@ export const RingGauge: React.FC<RingGaugeProps> = ({
 
       ctx.clearRect(0, 0, size, size);
 
-      // Track
+      // 背景轨道 — demo: rgba(60,140,255,0.04)
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.strokeStyle = 'rgba(60,140,255,0.04)';
       ctx.lineWidth = strokeWidth;
-      ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Progress arc
+      // 渐变弧线 — demo: createLinearGradient(10,10,100,100)
       if (pct > 0) {
         const startAngle = -Math.PI / 2;
         const endAngle = startAngle + Math.PI * 2 * pct;
 
-        const grad = ctx.createConicGradient(startAngle, cx, cy);
+        const grad = ctx.createLinearGradient(10, 10, size - 10, size - 10);
         grad.addColorStop(0, colors[0]);
-        grad.addColorStop(pct, colors[1]);
         grad.addColorStop(1, colors[1]);
 
         ctx.beginPath();
@@ -78,21 +85,6 @@ export const RingGauge: React.FC<RingGaugeProps> = ({
         ctx.stroke();
       }
 
-      // Center text
-      const displayPct = Math.round(pct * max);
-      ctx.fillStyle = 'var(--text-primary)';
-      ctx.font = `600 18px Inter, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(`${displayPct}%`, cx, label ? cy - 6 : cy);
-
-      if (label) {
-        ctx.font = `12px Inter, sans-serif`;
-        ctx.fillStyle = '#8899a6';
-        ctx.fillText(label, cx, cy + 12);
-      }
-
       if (t < 1) {
         animRef.current = requestAnimationFrame(render);
       }
@@ -100,11 +92,12 @@ export const RingGauge: React.FC<RingGaugeProps> = ({
 
     animRef.current = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animRef.current);
-  }, [value, max, label, size, strokeWidth, colors]);
+  }, [value, max, size, strokeWidth, colors]);
 
   return (
     <canvas
       ref={canvasRef}
+      data-no-transition
       style={{ display: 'block', width: size, height: size }}
     />
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
   MetricFlipCard,
   HealthMatrix,
@@ -6,115 +6,101 @@ import {
   AITypewriter,
   LiveDot,
   FlipCard,
+  RingGauge,
 } from '@opsnexus/ui-kit';
 import type { HealthCell } from '@opsnexus/ui-kit';
-import * as echarts from 'echarts';
 
 /* ------------------------------------------------------------------ */
 /*  Mock data                                                         */
 /* ------------------------------------------------------------------ */
 
-/** 生成24小时模拟告警数据 */
-function generateHourlyData(): { hours: string[]; raw: number[]; effective: number[] } {
-  const hours: string[] = [];
-  const raw: number[] = [];
-  const effective: number[] = [];
-  const now = new Date();
-  for (let i = 23; i >= 0; i--) {
-    const h = new Date(now.getTime() - i * 3600_000);
-    hours.push(`${h.getHours().toString().padStart(2, '0')}:00`);
-    const r = Math.floor(Math.random() * 20) + 5;
-    raw.push(r);
-    effective.push(Math.floor(r * (0.3 + Math.random() * 0.4)));
-  }
-  return { hours, raw, effective };
-}
-
-/** 业务健康矩阵 mock */
+/** 业务健康矩阵 mock — 匹配 demo 的 3行×5列 */
 function generateHealthCells(): HealthCell[] {
-  const rows = ['前端', '后端', '数据库', '缓存', '消息队列'];
-  const cols = ['P0', 'P1', 'P2', 'P3', 'P4'];
-  const statuses: HealthCell['status'][] = ['ok', 'degraded', 'critical'];
-  return rows.flatMap((row, ri) =>
-    cols.map((col, ci) => {
-      const rand = Math.random();
-      const status = rand < 0.7 ? 'ok' : rand < 0.9 ? 'degraded' : 'critical';
+  const rows = ['pay', 'shop', 'risk'];
+  const cols = ['NET', 'HOST', 'APP', 'DB', 'MW'];
+  // 模拟 demo 中的固定状态分布
+  const statusMap: Record<string, HealthCell['status']> = {
+    'pay-NET': 'critical', 'pay-HOST': 'critical', 'pay-APP': 'degraded', 'pay-DB': 'degraded', 'pay-MW': 'ok',
+    'shop-NET': 'ok', 'shop-HOST': 'ok', 'shop-APP': 'ok', 'shop-DB': 'ok', 'shop-MW': 'ok',
+    'risk-NET': 'ok', 'risk-HOST': 'ok', 'risk-APP': 'ok', 'risk-DB': 'ok', 'risk-MW': 'ok',
+  };
+  const detailsMap: Record<string, HealthCell['details']> = {
+    'pay-NET': { cpu: 0 }, 'pay-HOST': { cpu: 95 }, 'pay-APP': { conn: 200 }, 'pay-DB': { disk: 87 }, 'pay-MW': { conn: 3 },
+    'shop-NET': { cpu: 100 }, 'shop-HOST': { cpu: 42 }, 'shop-APP': { conn: 80 }, 'shop-DB': { disk: 61 }, 'shop-MW': { conn: 2 },
+    'risk-NET': { cpu: 100 }, 'risk-HOST': { cpu: 38 }, 'risk-APP': { conn: 45 }, 'risk-DB': { disk: 55 }, 'risk-MW': { conn: 1 },
+  };
+
+  return rows.flatMap((row) =>
+    cols.map((col) => {
+      const key = `${row}-${col}`;
       return {
-        id: `${ri}-${ci}`,
+        id: key,
         label: `${row}/${col}`,
-        status,
-        details: {
-          cpu: Math.floor(Math.random() * 60 + 20),
-          mem: Math.floor(Math.random() * 50 + 30),
-          disk: Math.floor(Math.random() * 40 + 10),
-          conn: Math.floor(Math.random() * 200 + 50),
-        },
+        status: statusMap[key] || 'ok',
+        details: detailsMap[key],
       } satisfies HealthCell;
     }),
   );
 }
 
 const funnelData = [
-  { label: '原始告警', value: 175 },
-  { label: '维护过滤', value: 140 },
-  { label: '合并聚合', value: 72 },
-  { label: 'AI 抑制', value: 47 },
-  { label: '人工处理', value: 47 },
+  { label: 'raw', value: 175 },
+  { label: 'filtered', value: 140 },
+  { label: 'merged', value: 72 },
+  { label: 'AI cut', value: 47 },
+  { label: 'human', value: 47 },
 ];
 
-interface TimelineEvent {
+interface AlertRow {
   id: string;
-  time: string;
+  severity: 'P0' | 'P1' | 'P2' | 'P3';
   title: string;
-  severity: 'P0' | 'P1' | 'P2';
-  status: string;
+  host: string;
+  duration: string;
 }
 
-const recentEvents: TimelineEvent[] = [
-  { id: '1', time: '14:32', title: '核心交易数据库主从延迟超阈值', severity: 'P0', status: '处理中' },
-  { id: '2', time: '13:15', title: 'API 网关 5xx 错误率飙升至 2.3%', severity: 'P0', status: '已解决' },
-  { id: '3', time: '11:48', title: '缓存集群节点 redis-07 内存使用 95%', severity: 'P1', status: '处理中' },
-  { id: '4', time: '10:22', title: '消息队列消费延迟超过 30s', severity: 'P1', status: '已解决' },
-  { id: '5', time: '09:05', title: 'CDN 边缘节点证书即将过期', severity: 'P2', status: '待处理' },
+const activeAlerts: AlertRow[] = [
+  { id: '1', severity: 'P0', title: 'server-pay-01 unreachable', host: 'payment', duration: '15m' },
+  { id: '2', severity: 'P1', title: 'CPU 95.3% > threshold', host: 'payment', duration: '15m' },
+  { id: '3', severity: 'P1', title: 'MySQL slow queries 200/min', host: 'payment', duration: '17m' },
+  { id: '4', severity: 'P2', title: 'disk usage +35% baseline', host: 'analytics', duration: '19m' },
+  { id: '5', severity: 'P3', title: 'API P99 latency WoW +25%', host: 'e-comm', duration: '29m' },
 ];
 
 const aiSummaryText =
-  '今日系统整体运行平稳，共产生 175 条原始告警，经降噪处理后有效告警 47 条。' +
-  '重点关注：核心交易数据库在 14:32 出现主从延迟异常，已自动触发故障转移流程；' +
-  'API 网关 5xx 错误率在 13:15 短暂飙升后恢复正常，根因定位为上游服务滚动更新导致。' +
-  '当前 SLA 维持在 99.97%，MTTR 较昨日下降 4 分钟至 18 分钟，降噪效率稳步提升。';
+  'Root cause: human-triggered cascade. Operator wanghao executed interface shutdown on switch-core-01 GE0/0/1 at 10:12:03 without change order. ' +
+  'This caused connectivity loss for 3 downstream payment hosts, triggering CPU spike from retry storms. ' +
+  'Recommend: immediate port re-enable + post-incident review.';
 
 interface OnCallMember {
+  initials: string;
   name: string;
   role: string;
-  roleLabel: string;
   status: string;
   statusColor: string;
+  avatarBg: string;
   phone: string;
-  responseTime: string;
-  todayCount: number;
+  backLabel2: string;
+  backValue2: string;
+  backLabel3: string;
+  backValue3: string;
 }
 
 const onCallTeam: OnCallMember[] = [
-  { name: '张伟', role: 'primary', roleLabel: '主值班', status: 'P0 处理中', statusColor: '#ff6b6b', phone: '138****1234', responseTime: '2min', todayCount: 5 },
-  { name: '陈静', role: 'backup', roleLabel: '副值班', status: '空闲', statusColor: '#00e5a0', phone: '139****5678', responseTime: '5min', todayCount: 2 },
-  { name: '李明', role: 'supervisor', roleLabel: '主管', status: '在线', statusColor: '#4da6ff', phone: '137****9012', responseTime: '10min', todayCount: 0 },
+  { initials: 'ZW', name: 'zhangwei', role: 'primary', status: 'P0', statusColor: 'var(--color-danger, #ff6b6b)', avatarBg: 'rgba(255,70,70,0.06)', phone: '138****6721', backLabel2: 'last resp', backValue2: '2 min', backLabel3: 'today', backValue3: '6 handled' },
+  { initials: 'CJ', name: 'chenjing', role: 'backup', status: 'standby', statusColor: 'var(--color-success, #00e5a0)', avatarBg: 'rgba(0,229,160,0.06)', phone: '139****8834', backLabel2: 'last resp', backValue2: '8 min', backLabel3: 'today', backValue3: '2 handled' },
+  { initials: 'LM', name: 'liming', role: 'supervisor', status: 'online', statusColor: 'var(--color-primary, #4da6ff)', avatarBg: 'rgba(77,166,255,0.06)', phone: '137****4412', backLabel2: 'escalated', backValue2: '1 P0', backLabel3: 'approved', backValue3: '3 changes' },
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Severity colors for timeline                                       */
+/*  Severity styling                                                   */
 /* ------------------------------------------------------------------ */
 
-const SEVERITY_LINE_COLORS: Record<string, string> = {
-  P0: '#ff6b6b',
-  P1: '#ffaa33',
-  P2: '#4da6ff',
-};
-
-const STATUS_TAG_COLORS: Record<string, { bg: string; fg: string }> = {
-  '处理中': { bg: 'rgba(255,170,51,0.15)', fg: '#ffaa33' },
-  '已解决': { bg: 'rgba(0,229,160,0.15)', fg: '#00e5a0' },
-  '待处理': { bg: 'rgba(77,166,255,0.15)', fg: '#4da6ff' },
+const SEVERITY_STYLES: Record<string, { bg: string; fg: string }> = {
+  P0: { bg: 'rgba(255,70,70,0.1)', fg: 'var(--color-danger, #ff6b6b)' },
+  P1: { bg: 'rgba(255,170,50,0.08)', fg: 'var(--color-warning, #ffaa33)' },
+  P2: { bg: 'rgba(77,166,255,0.08)', fg: 'var(--color-primary, #60a5fa)' },
+  P3: { bg: 'rgba(100,130,170,0.06)', fg: 'var(--text-secondary, rgba(140,170,210,0.35))' },
 };
 
 /* ------------------------------------------------------------------ */
@@ -122,17 +108,29 @@ const STATUS_TAG_COLORS: Record<string, { bg: string; fg: string }> = {
 /* ------------------------------------------------------------------ */
 
 const panelStyle: React.CSSProperties = {
-  background: 'var(--bg-card, rgba(255,255,255,0.04))',
-  border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
+  background: 'var(--bg-card, rgba(10,16,28,0.5))',
+  border: '1px solid var(--border-color, rgba(60,140,255,0.04))',
   borderRadius: 12,
-  padding: 16,
+  overflow: 'hidden',
 };
 
-const sectionTitle: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 600,
-  color: 'var(--text-primary, #e2e8f0)',
-  marginBottom: 12,
+const panelHeader: React.CSSProperties = {
+  padding: '10px 14px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.04))',
+};
+
+const panelTitle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'var(--text-primary, rgba(200,220,240,0.6))',
+};
+
+const mutedText: React.CSSProperties = {
+  fontSize: 8,
+  color: 'var(--text-secondary, rgba(140,170,210,0.3))',
 };
 
 /* ------------------------------------------------------------------ */
@@ -140,306 +138,278 @@ const sectionTitle: React.CSSProperties = {
 /* ------------------------------------------------------------------ */
 
 const Home: React.FC = () => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstanceRef = useRef<echarts.ECharts | null>(null);
-
-  useEffect(() => {
-    if (!chartRef.current) return;
-
-    const el = chartRef.current;
-    const chart = echarts.init(el);
-    chartInstanceRef.current = chart;
-
-    const computed = getComputedStyle(el);
-    const borderColor = computed.getPropertyValue('--border-color').trim() || 'rgba(255,255,255,0.08)';
-    const textSecondary = computed.getPropertyValue('--text-secondary').trim() || '#8899a6';
-    const primaryColor = computed.getPropertyValue('--color-primary').trim() || '#4da6ff';
-
-    const { hours, raw, effective } = generateHourlyData();
-
-    chart.setOption({
-      grid: { top: 16, right: 16, bottom: 28, left: 40 },
-      xAxis: {
-        type: 'category',
-        data: hours,
-        axisLine: { lineStyle: { color: borderColor } },
-        axisLabel: { color: textSecondary, fontSize: 10 },
-        axisTick: { show: false },
-      },
-      yAxis: {
-        type: 'value',
-        splitLine: { lineStyle: { color: borderColor, type: 'dashed' } },
-        axisLabel: { color: textSecondary, fontSize: 10 },
-      },
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: 'rgba(20,20,30,0.9)',
-        borderColor,
-        textStyle: { color: '#e2e8f0', fontSize: 12 },
-      },
-      series: [
-        {
-          name: '原始告警',
-          type: 'line',
-          data: raw,
-          smooth: true,
-          symbol: 'none',
-          lineStyle: { color: 'rgba(140,170,210,0.5)', width: 1.5 },
-          itemStyle: { color: 'rgba(140,170,210,0.5)' },
-        },
-        {
-          name: '有效告警',
-          type: 'line',
-          data: effective,
-          smooth: true,
-          symbol: 'none',
-          lineStyle: { color: primaryColor, width: 2 },
-          itemStyle: { color: primaryColor },
-          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: primaryColor.replace(')', ',0.3)').replace('rgb', 'rgba') },
-            { offset: 1, color: 'rgba(77,166,255,0)' },
-          ]) },
-        },
-      ],
-    });
-
-    const handleResize = () => chart.resize();
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.dispose();
-      chartInstanceRef.current = null;
-    };
-  }, []);
-
   const healthCells = React.useMemo(() => generateHealthCells(), []);
 
   return (
-    <div
-      style={{
-        background: 'var(--bg-primary, #0d1117)',
-        minHeight: '100vh',
-        padding: 24,
-        color: 'var(--text-primary, #e2e8f0)',
-      }}
-    >
-      {/* -------- A. 4 张翻牌指标卡 -------- */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+    <div style={{ padding: 12 }}>
+      {/* -------- A. 4 张翻牌指标卡 — demo .cards -------- */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 10 }}>
         <MetricFlipCard
-          label="当前告警"
+          label="FIRING ALERTS"
           value={12}
           trend="up"
-          trendValue="+3"
+          trendValue="+3 vs yesterday"
+          color="var(--color-danger, #ff6b6b)"
+          scanColor="rgba(255,70,70,0.4)"
           backItems={[
-            { label: 'P0', value: 3 },
-            { label: 'P1', value: 5 },
-            { label: 'P2', value: 4 },
+            { label: 'P0', value: 1 },
+            { label: 'P1', value: 4 },
+            { label: 'P2', value: 5 },
+            { label: 'P3', value: 2 },
+            { label: 'peak today', value: '18 (09:30)' },
           ]}
         />
         <MetricFlipCard
-          label="今日事件"
-          value={5}
-          trend="flat"
-          backItems={[
-            { label: '处理中', value: 2 },
-            { label: '已解决', value: 3 },
-          ]}
-        />
-        <MetricFlipCard
-          label="SLA"
-          value={99.97}
-          suffix="%"
-          trend="up"
-          backItems={[
-            { label: 'API', value: '99.9%' },
-            { label: 'Web', value: '100%' },
-            { label: 'DB', value: '99.8%' },
-          ]}
-        />
-        <MetricFlipCard
-          label="MTTR"
-          value={18}
-          suffix="min"
+          label="RESOLVED TODAY"
+          value={35}
           trend="down"
-          trendValue="-4min"
+          trendValue="+5 vs yesterday"
+          color="var(--color-success, #00e5a0)"
+          scanColor="rgba(0,229,160,0.4)"
           backItems={[
-            { label: '检测', value: '3min' },
-            { label: '定位', value: '8min' },
-            { label: '修复', value: '7min' },
+            { label: 'auto-resolved', value: 22 },
+            { label: 'manual ack', value: 13 },
+            { label: 'avg resolve', value: '14 min' },
+            { label: 'MTTR trend', value: '-18%' },
+          ]}
+        />
+        <MetricFlipCard
+          label="NOISE REDUCTION"
+          value="73%"
+          color="var(--color-primary, #4da6ff)"
+          scanColor="rgba(77,166,255,0.4)"
+          backItems={[
+            { label: 'maint window', value: 35 },
+            { label: 'convergence', value: 68 },
+            { label: 'baseline', value: 12 },
+            { label: 'AI suppress', value: 13 },
+            { label: 'false +', value: '2.1%' },
+          ]}
+        />
+        <MetricFlipCard
+          label="MTTR (AVG)"
+          value="18min"
+          color="var(--color-success, #00e5a0)"
+          scanColor="rgba(0,229,160,0.4)"
+          backItems={[
+            { label: 'detect', value: '2 min' },
+            { label: 'triage', value: '5 min' },
+            { label: 'fix', value: '8 min' },
+            { label: 'verify', value: '3 min' },
+            { label: 'P0 MTTR', value: '32 min' },
           ]}
         />
       </div>
 
-      {/* -------- B. 告警趋势 + 健康矩阵 -------- */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-        <div style={panelStyle}>
-          <div style={sectionTitle}>告警趋势 24h</div>
-          <div ref={chartRef} style={{ width: '100%', height: 220, color: 'var(--text-secondary)' }} />
-        </div>
-        <div style={panelStyle}>
-          <div style={sectionTitle}>业务健康矩阵</div>
-          <HealthMatrix cells={healthCells} rows={5} cols={5} cellHeight={36} />
-        </div>
-      </div>
+      {/* -------- B. 降噪漏斗流水线 — demo .fn -------- */}
+      <NoiseFunnel layers={funnelData} />
 
-      {/* -------- C. 降噪漏斗 -------- */}
-      <div style={{ ...panelStyle, marginBottom: 24 }}>
-        <div style={sectionTitle}>降噪漏斗</div>
-        <NoiseFunnel layers={funnelData} />
-      </div>
-
-      {/* -------- D. 最近事件流 + AI 洞察摘要 -------- */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-        {/* 事件时间线 */}
+      {/* -------- C. 主内容区 两栏布局 — demo .main -------- */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 260px', gap: 8, marginTop: 8 }}>
+        {/* 左栏：告警表格 + AI 分析 */}
         <div style={panelStyle}>
-          <div style={sectionTitle}>最近事件</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {recentEvents.map((evt, idx) => {
-              const lineColor = SEVERITY_LINE_COLORS[evt.severity] || '#4da6ff';
-              const tagColor = STATUS_TAG_COLORS[evt.status] || STATUS_TAG_COLORS['待处理'];
-              return (
-                <div
-                  key={evt.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 12,
-                    padding: '10px 0',
-                    borderBottom: idx < recentEvents.length - 1 ? '1px solid var(--border-color, rgba(255,255,255,0.06))' : 'none',
-                  }}
-                >
-                  {/* 左侧竖线 + 圆点 */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 12, flexShrink: 0, paddingTop: 2 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: lineColor, flexShrink: 0 }} />
-                    {idx < recentEvents.length - 1 && (
-                      <div style={{ width: 2, flex: 1, minHeight: 20, background: lineColor, opacity: 0.3, marginTop: 4 }} />
-                    )}
-                  </div>
-                  {/* 内容 */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-secondary, #8899a6)', fontVariantNumeric: 'tabular-nums' }}>
-                        {evt.time}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          color: lineColor,
-                          background: `${lineColor}20`,
-                          padding: '1px 6px',
-                          borderRadius: 4,
-                        }}
-                      >
-                        {evt.severity}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-primary, #e2e8f0)', lineHeight: 1.4, marginBottom: 4 }}>
-                      {evt.title}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 500,
-                        color: tagColor.fg,
-                        background: tagColor.bg,
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                      }}
-                    >
-                      {evt.status}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+          <div style={panelHeader}>
+            <span style={panelTitle}>active alerts</span>
+            <span
+              style={{
+                fontSize: 8,
+                padding: '2px 9px',
+                borderRadius: 10,
+                background: 'rgba(255,70,70,0.06)',
+                color: 'var(--color-danger, #ff6b6b)',
+              }}
+            >
+              12 firing
+            </span>
           </div>
-        </div>
-
-        {/* AI 洞察摘要 */}
-        <div style={panelStyle}>
-          <div style={{ ...sectionTitle, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>今日运维摘要</span>
-            <LiveDot label="AI" size={4} />
-          </div>
-          <div style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary, #8899a6)' }}>
-            <AITypewriter text={aiSummaryText} speed={20} />
-          </div>
-        </div>
-      </div>
-
-      {/* -------- E. 值班团队 -------- */}
-      <div style={{ ...panelStyle }}>
-        <div style={sectionTitle}>值班团队</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {onCallTeam.map((member) => (
-            <div key={member.name} style={{ height: 100 }}>
-              <FlipCard
-                front={
-                  <div
+          {/* 告警表格 — demo .tbl */}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              {activeAlerts.map((alert) => {
+                const sev = SEVERITY_STYLES[alert.severity] || SEVERITY_STYLES.P3;
+                return (
+                  <tr
+                    key={alert.id}
                     style={{
-                      ...panelStyle,
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      gap: 6,
-                      boxSizing: 'border-box',
+                      cursor: 'pointer',
+                      boxShadow: alert.severity === 'P0' ? `inset 3px 0 0 ${sev.fg}` : undefined,
                     }}
                   >
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary, #e2e8f0)' }}>
-                      {member.name}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <td style={{ padding: '7px 12px', fontSize: 10, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))' }}>
                       <span
                         style={{
-                          fontSize: 11,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           padding: '2px 8px',
                           borderRadius: 4,
-                          background: 'rgba(77,166,255,0.15)',
-                          color: '#4da6ff',
-                          fontWeight: 500,
+                          fontSize: 8,
+                          fontWeight: 600,
+                          minWidth: 28,
+                          background: sev.bg,
+                          color: sev.fg,
                         }}
                       >
-                        {member.roleLabel}
+                        {alert.severity}
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: member.statusColor, display: 'inline-block' }} />
-                        <span style={{ color: member.statusColor }}>{member.status}</span>
+                    </td>
+                    <td style={{ padding: '7px 12px', fontSize: 10, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', color: 'var(--text-primary, #e2e8f0)' }}>
+                      {alert.title}
+                    </td>
+                    <td style={{ padding: '7px 12px', fontSize: 9, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', color: 'var(--color-primary, rgba(77,166,255,0.6))' }}>
+                      {alert.host}
+                    </td>
+                    <td style={{ padding: '7px 12px', fontSize: 9, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', fontFamily: 'ui-monospace, monospace', color: 'var(--text-secondary, rgba(255,170,50,0.5))' }}>
+                      {alert.duration}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* AI 根因分析 — demo .ai */}
+          <div
+            style={{
+              margin: '8px 12px 10px',
+              borderRadius: '0 10px 10px 0',
+              padding: '10px 14px',
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(0,229,160,0.03), var(--bg-card, rgba(10,16,28,0.6)))',
+              border: '1px solid rgba(0,229,160,0.06)',
+              borderLeft: '2px solid rgba(0,229,160,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 500, marginBottom: 5, color: 'var(--color-success, #00e5a0)' }}>
+              <LiveDot size={5} label="" />
+              <span>AI root cause analysis</span>
+              <span
+                style={{
+                  fontSize: 8,
+                  padding: '2px 7px',
+                  borderRadius: 4,
+                  fontWeight: 400,
+                  background: 'rgba(0,229,160,0.08)',
+                  color: 'var(--color-success, #00e5a0)',
+                }}
+              >
+                95%
+              </span>
+            </div>
+            <div style={{ fontSize: 10, lineHeight: 1.7, color: 'var(--text-secondary, rgba(160,185,215,0.55))' }}>
+              <AITypewriter text={aiSummaryText} speed={20} />
+            </div>
+          </div>
+        </div>
+
+        {/* 右栏：SLA 环形图 + 健康矩阵 + 值班团队 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* SLA 环形仪表盘 — demo .ring-box */}
+          <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 14 }}>
+            <span style={panelTitle}>platform SLA</span>
+            <div style={{ position: 'relative', width: 110, height: 110, margin: '4px 0' }}>
+              <RingGauge value={99.97} max={100} size={110} strokeWidth={5} />
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                  pointerEvents: 'none',
+                }}
+              >
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-success, #00e5a0)' }}>99.97</div>
+                <div style={{ fontSize: 8, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>% uptime</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 业务健康矩阵 — demo .hg */}
+          <div style={panelStyle}>
+            <div style={panelHeader}>
+              <span style={panelTitle}>business health matrix</span>
+              <span style={mutedText}>hover to flip</span>
+            </div>
+            <HealthMatrix
+              cells={healthCells}
+              rows={3}
+              cols={5}
+              cellHeight={24}
+              colLabels={['NET', 'HOST', 'APP', 'DB', 'MW']}
+              rowLabels={['pay', 'shop', 'risk']}
+            />
+          </div>
+
+          {/* 值班团队 — demo .tm-flip */}
+          <div style={panelStyle}>
+            <div style={panelHeader}>
+              <span style={panelTitle}>on-call team</span>
+              <span style={mutedText}>hover to flip</span>
+            </div>
+            {onCallTeam.map((m, i) => (
+              <div key={m.name} style={{ height: 36, marginBottom: i < onCallTeam.length - 1 ? 0 : 6 }}>
+                <FlipCard
+                  duration={500}
+                  front={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 12px', fontSize: 9, height: '100%' }}>
+                      {/* 头像 */}
+                      <div
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 9,
+                          fontWeight: 600,
+                          flexShrink: 0,
+                          background: m.avatarBg,
+                          color: m.statusColor,
+                        }}
+                      >
+                        {m.initials}
+                      </div>
+                      {/* 名字 + 角色 */}
+                      <div style={{ flex: 1 }}>
+                        <b style={{ display: 'block', fontSize: 10, fontWeight: 500, color: 'var(--text-primary, rgba(200,220,240,0.8))' }}>{m.name}</b>
+                        <span style={{ color: 'var(--text-secondary, rgba(180,200,225,0.5))' }}>{m.role}</span>
+                      </div>
+                      {/* 状态标签 */}
+                      <span
+                        style={{
+                          fontSize: 8,
+                          padding: '2px 7px',
+                          borderRadius: 8,
+                          background: m.avatarBg,
+                          color: m.statusColor,
+                        }}
+                      >
+                        {m.status}
                       </span>
                     </div>
-                  </div>
-                }
-                back={
-                  <div
-                    style={{
-                      ...panelStyle,
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      gap: 6,
-                      boxSizing: 'border-box',
-                      fontSize: 12,
-                    }}
-                  >
-                    {[
-                      { label: '手机', value: member.phone },
-                      { label: '响应时间', value: member.responseTime },
-                      { label: '今日处理', value: `${member.todayCount} 条` },
-                    ].map((item) => (
-                      <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--text-secondary, #8899a6)' }}>{item.label}</span>
-                        <span style={{ color: 'var(--text-primary, #e2e8f0)', fontWeight: 600 }}>{item.value}</span>
+                  }
+                  back={
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '2px 12px', fontFamily: 'ui-monospace, monospace', fontSize: 9, height: '100%' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 7, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>phone</div>
+                        <div style={{ color: 'var(--text-primary, rgba(200,220,240,0.7))' }}>{m.phone}</div>
                       </div>
-                    ))}
-                  </div>
-                }
-              />
-            </div>
-          ))}
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 7, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>{m.backLabel2}</div>
+                        <div style={{ color: 'var(--text-primary, rgba(200,220,240,0.7))' }}>{m.backValue2}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 7, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>{m.backLabel3}</div>
+                        <div style={{ color: 'var(--text-primary, rgba(200,220,240,0.7))' }}>{m.backValue3}</div>
+                      </div>
+                    </div>
+                  }
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

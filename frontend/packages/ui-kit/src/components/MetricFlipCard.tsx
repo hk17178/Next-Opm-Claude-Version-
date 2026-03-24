@@ -13,6 +13,8 @@ interface MetricFlipCardProps {
   back?: React.ReactNode;
   backItems?: Array<{ label: string; value: string | number }>;
   color?: string;
+  /** 扫描线颜色（rgba 格式），不传则使用默认蓝色 */
+  scanColor?: string;
   animate?: boolean;
 }
 
@@ -34,26 +36,41 @@ const cardStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const FrontFace: React.FC<MetricFlipCardProps> = ({ label, value, suffix, trend, trendValue, icon, animate = true }) => (
+const FrontFace: React.FC<MetricFlipCardProps> = ({ label, value, suffix, trend, trendValue, icon, animate = true, color, scanColor }) => (
   <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-    <ScanLine />
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      {icon && <span style={{ fontSize: 14, lineHeight: 1 }}>{icon}</span>}
-      <span style={{ color: 'var(--text-secondary, #8899a6)', fontSize: 12 }}>{label}</span>
+    {/* 静态顶部渐变线 — demo .cd-top */}
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 1,
+        background: 'linear-gradient(90deg, transparent 5%, var(--color-primary-alpha15, rgba(77,166,255,0.15)) 50%, transparent 95%)',
+        pointerEvents: 'none',
+      }}
+    />
+    {/* 动态扫描线 — demo .cd-scan */}
+    <ScanLine color={scanColor} />
+    {/* 标签 — demo .cd-l */}
+    <div style={{ fontSize: 8, letterSpacing: '1.2px', fontWeight: 500, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>
+      {label}
     </div>
-    <div>
+    {/* 数值 — demo .cd-v */}
+    <div style={{ color: color || 'var(--text-primary, #e2e8f0)' }}>
       {animate ? (
-        <NumberFlip value={value} suffix={suffix} fontSize={28} fontWeight={700} />
+        <NumberFlip value={value} suffix={suffix} fontSize={28} fontWeight={700} color={color || 'var(--text-primary, #e2e8f0)'} />
       ) : (
-        <span style={{ fontSize: 28, fontWeight: 700, fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary, #e2e8f0)' }}>
+        <span style={{ fontSize: 28, fontWeight: 700, fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums' }}>
           {value}{suffix && <span style={{ fontSize: 16, fontWeight: 400, marginLeft: 2 }}>{suffix}</span>}
         </span>
       )}
     </div>
+    {/* 趋势 — demo .cd-t */}
     {trend && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-        <span style={{ color: trendColors[trend], fontWeight: 600 }}>{trendArrows[trend]}</span>
-        {trendValue && <span style={{ color: trendColors[trend] }}>{trendValue}</span>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: color || trendColors[trend] }}>
+        <span style={{ fontWeight: 600 }}>{trendArrows[trend]}</span>
+        {trendValue && <span>{trendValue}</span>}
       </div>
     )}
     {!trend && <div style={{ height: 16 }} />}

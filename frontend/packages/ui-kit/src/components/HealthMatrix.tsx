@@ -19,27 +19,48 @@ interface HealthMatrixProps {
   rows?: number;
   cols?: number;
   cellHeight?: number;
+  /** 列标题，如 ['NET','HOST','APP','DB','MW'] */
+  colLabels?: string[];
+  /** 行标题，如 ['pay','shop','risk'] */
+  rowLabels?: string[];
 }
 
 const STATUS_COLORS: Record<HealthCell['status'], string> = {
-  ok: 'var(--color-success)',
-  degraded: 'var(--color-warning)',
-  critical: 'var(--color-danger)',
+  ok: 'var(--color-success, rgba(0,229,160,0.06))',
+  degraded: 'var(--color-warning, rgba(255,170,50,0.06))',
+  critical: 'var(--color-danger, rgba(255,70,70,0.06))',
+  unknown: 'rgba(140,170,210,0.06)',
+};
+
+const STATUS_TEXT_COLORS: Record<HealthCell['status'], string> = {
+  ok: 'var(--color-success, #00e5a0)',
+  degraded: 'var(--color-warning, #ffaa33)',
+  critical: 'var(--color-danger, #ff6b6b)',
   unknown: 'rgba(140,170,210,0.3)',
+};
+
+const STATUS_BORDER: Record<HealthCell['status'], string> = {
+  ok: 'var(--color-success, rgba(0,229,160,0.06))',
+  degraded: 'var(--color-warning, rgba(255,170,50,0.08))',
+  critical: 'var(--color-danger, rgba(255,70,70,0.08))',
+  unknown: 'rgba(140,170,210,0.06)',
 };
 
 injectGlobalStyles('uikit-health-pulse-keyframes', `
 @keyframes uikit-health-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+  0%, 100% { box-shadow: inset 0 0 6px rgba(255,70,70,0.06); }
+  50% { box-shadow: inset 0 0 14px rgba(255,70,70,0.15); }
 }
 @media (prefers-reduced-motion: reduce) {
   .uikit-health-critical { animation: none !important; }
 }
 `);
 
+/**
+ * CellFront — 严格匹配 demo .hc-f 样式
+ * 圆角方块，背景色半透明 + 边框，居中显示状态
+ */
 const CellFront: React.FC<{ cell: HealthCell; height: number }> = ({ cell, height }) => {
-  const bg = STATUS_COLORS[cell.status];
   const isCritical = cell.status === 'critical';
 
   return (
@@ -48,97 +69,143 @@ const CellFront: React.FC<{ cell: HealthCell; height: number }> = ({ cell, heigh
       style={{
         width: '100%',
         height,
-        background: bg,
+        background: STATUS_COLORS[cell.status],
+        border: `1px solid ${STATUS_BORDER[cell.status]}`,
+        color: STATUS_TEXT_COLORS[cell.status],
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 4,
-        animation: isCritical ? 'uikit-health-pulse 3s ease-in-out infinite' : undefined,
+        borderRadius: 5,
+        fontSize: 7,
+        fontWeight: 500,
+        cursor: 'pointer',
+        animation: isCritical ? 'uikit-health-pulse 3s ease infinite' : undefined,
       }}
-    >
-      <span
-        style={{
-          fontSize: 10,
-          color: '#fff',
-          fontWeight: 600,
-          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-          textAlign: 'center',
-          padding: '0 2px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: '100%',
-        }}
-      >
-        {cell.label}
-      </span>
-    </div>
+    />
   );
 };
 
+/**
+ * CellBack — 严格匹配 demo .hc-b 样式
+ * 翻转后显示关键指标数值
+ */
 const CellBack: React.FC<{ cell: HealthCell; height: number }> = ({ cell, height }) => {
   const d = cell.details;
-  const lines: [string, string][] = [];
-  if (d?.cpu != null) lines.push(['CPU', `${d.cpu}%`]);
-  if (d?.mem != null) lines.push(['内存', `${d.mem}%`]);
-  if (d?.disk != null) lines.push(['磁盘', `${d.disk}%`]);
-  if (d?.conn != null) lines.push(['连接', `${d.conn}`]);
+  // 根据 details 选择最关键的一行显示
+  let summary = '--';
+  if (d?.cpu != null && d.cpu > 80) summary = `${d.cpu}% cpu`;
+  else if (d?.disk != null && d.disk > 70) summary = `${d.disk}% disk`;
+  else if (d?.mem != null && d.mem > 80) summary = `${d.mem}% mem`;
+  else if (d?.conn != null) summary = `${d.conn} conn`;
+  else if (d?.cpu != null) summary = `OK ${d.cpu}%`;
+  else summary = cell.status === 'ok' ? 'OK' : '--';
 
   return (
     <div
       style={{
         width: '100%',
         height,
-        background: 'var(--bg-card, #1a1a2e)',
-        border: `1px solid ${STATUS_COLORS[cell.status]}`,
-        borderRadius: 4,
+        background: STATUS_COLORS[cell.status],
+        border: `1px solid ${STATUS_BORDER[cell.status]}`,
+        color: STATUS_TEXT_COLORS[cell.status],
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
         justifyContent: 'center',
-        padding: '2px 4px',
-        boxSizing: 'border-box',
-        fontSize: 9,
-        lineHeight: '13px',
-        color: 'var(--text-color, #ccc)',
-        overflow: 'hidden',
+        borderRadius: 5,
+        padding: '0 3px',
+        fontFamily: 'ui-monospace, monospace',
+        fontSize: 6,
+        letterSpacing: '0.2px',
+        fontWeight: 500,
       }}
     >
-      {lines.map(([k, v]) => (
-        <div key={k} style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ opacity: 0.7 }}>{k}</span>
-          <span style={{ fontWeight: 600 }}>{v}</span>
-        </div>
-      ))}
-      {lines.length === 0 && (
-        <span style={{ textAlign: 'center', opacity: 0.5 }}>--</span>
-      )}
+      {summary}
     </div>
   );
 };
 
+/**
+ * HealthMatrix — 严格匹配 demo .hg 网格布局
+ *
+ * 带可选行标签（第一列）和列标题（第一行），
+ * gridTemplateColumns: [labelCol] repeat(cols, 1fr)
+ */
 export const HealthMatrix: React.FC<HealthMatrixProps> = ({
   cells,
   rows: _rows = 5,
   cols = 5,
-  cellHeight = 40,
+  cellHeight = 24,
+  colLabels,
+  rowLabels,
 }) => {
+  const hasLabels = !!(colLabels || rowLabels);
+  const gridCols = hasLabels
+    ? `46px repeat(${cols}, 1fr)`
+    : `repeat(${cols}, 1fr)`;
+
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-        gap: 4,
+        gridTemplateColumns: gridCols,
+        gap: 3,
+        padding: '8px 10px',
       }}
     >
-      {cells.map((cell) => (
-        <div key={cell.id} style={{ height: cellHeight }}>
-          <FlipCard
-            front={<CellFront cell={cell} height={cellHeight} />}
-            back={<CellBack cell={cell} height={cellHeight} />}
-            duration={400}
-          />
-        </div>
-      ))}
+      {/* 列标题行 */}
+      {colLabels && (
+        <>
+          {/* 左上角空白 */}
+          <div />
+          {colLabels.map((label) => (
+            <div
+              key={label}
+              style={{
+                fontSize: 7,
+                textAlign: 'center',
+                padding: '2px 0',
+                fontWeight: 500,
+                color: 'var(--text-secondary, rgba(140,170,210,0.3))',
+              }}
+            >
+              {label}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* 数据行 */}
+      {cells.map((cell, i) => {
+        const colIdx = i % cols;
+        const rowIdx = Math.floor(i / cols);
+
+        return (
+          <React.Fragment key={cell.id}>
+            {/* 行标签 */}
+            {colIdx === 0 && rowLabels && rowLabels[rowIdx] && (
+              <div
+                style={{
+                  fontSize: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'var(--text-secondary, rgba(140,170,210,0.3))',
+                }}
+              >
+                {rowLabels[rowIdx]}
+              </div>
+            )}
+            {colIdx === 0 && hasLabels && !rowLabels?.[rowIdx] && <div />}
+            {/* 翻转格子 */}
+            <div style={{ height: cellHeight }}>
+              <FlipCard
+                front={<CellFront cell={cell} height={cellHeight} />}
+                back={<CellBack cell={cell} height={cellHeight} />}
+                duration={400}
+              />
+            </div>
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };
