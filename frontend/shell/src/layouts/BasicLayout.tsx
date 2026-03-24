@@ -356,7 +356,6 @@ const BasicLayout: React.FC = () => {
 
           {/* 全局字体大小调节 */}
           <Dropdown
-            trigger={['click']}
             menu={{
               items: FONT_SIZES.map((fs) => ({
                 key: fs.key,
@@ -366,28 +365,25 @@ const BasicLayout: React.FC = () => {
             }}
             placement="bottomRight"
           >
-            <Tooltip title={t('header.fontSize', '字体大小')}>
-              <Button
-                type="text"
-                size="small"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  minWidth: 28,
-                }}
-              >
-                A
-              </Button>
-            </Tooltip>
+            <Button
+              type="text"
+              size="small"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontWeight: 700,
+                minWidth: 28,
+              }}
+            >
+              A
+            </Button>
           </Dropdown>
 
           {/* 语言切换 */}
           <Dropdown
-            trigger={['click']}
             menu={{
               items: [
                 { key: 'zh', label: '中文' },
