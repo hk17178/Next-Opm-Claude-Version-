@@ -9,7 +9,7 @@
  * - 可折叠侧边栏（220px ↔ 48px）
  * - 集成通知铃铛、连接状态指示器、语言切换、用户头像
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect as useEffectReact } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Input, Avatar, Dropdown, Tooltip, Button, ConfigProvider,
@@ -201,6 +201,20 @@ const BasicLayout: React.FC = () => {
 
   const [collapsed, setCollapsed] = useState(false);
   const [wsConnected] = useState(true);
+  /** 三个手动下拉面板的状态（同时只开一个） */
+  const [openPanel, setOpenPanel] = useState<'font' | 'lang' | 'user' | null>(null);
+  const panelWrapperRef = useRef<HTMLDivElement>(null);
+
+  /** 点击面板外部自动关闭 */
+  useEffectReact(() => {
+    if (!openPanel) return;
+    const handler = (e: MouseEvent) => {
+      if (panelWrapperRef.current?.contains(e.target as Node)) return;
+      setOpenPanel(null);
+    };
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 0);
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
+  }, [openPanel]);
 
   /* ─── 全局字体大小调节 ─── */
   const FONT_SIZE_KEY = 'opsnexus-font-size';
@@ -354,71 +368,126 @@ const BasicLayout: React.FC = () => {
             />
           </Tooltip>
 
-          {/* 全局字体大小调节 */}
-          <Dropdown
-            menu={{
-              items: FONT_SIZES.map((fs) => ({
-                key: fs.key,
-                label: `${globalFontSize === fs.key ? '✓ ' : '   '}${fs.label}`,
-              })),
-              onClick: ({ key }) => setGlobalFontSize(key),
-            }}
-            placement="bottomRight"
-          >
-            <Button
-              type="text"
-              size="small"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-primary)',
-                fontSize: 13,
-                fontWeight: 700,
-                minWidth: 28,
-              }}
-            >
-              A
-            </Button>
-          </Dropdown>
+          {/* ─── 字体/语言/用户 三个手动下拉面板 ─── */}
+          <div ref={panelWrapperRef} style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
 
-          {/* 语言切换 */}
-          <Dropdown
-            menu={{
-              items: [
-                { key: 'zh', label: '中文' },
-                { key: 'en', label: 'English' },
-              ],
-              onClick: ({ key }) => i18n.changeLanguage(key),
-            }}
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={<GlobalOutlined />}
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {i18n.language === 'zh' ? '中文' : 'EN'}
-            </Button>
-          </Dropdown>
+            {/* 全局字体大小 */}
+            <div style={{ position: 'relative' }}>
+              <Button
+                type="text"
+                size="small"
+                onClick={() => setOpenPanel(openPanel === 'font' ? null : 'font')}
+                style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, minWidth: 28 }}
+              >
+                A
+              </Button>
+              {openPanel === 'font' && (
+                <div style={{
+                  position: 'absolute', top: 36, right: 0, zIndex: 1060,
+                  background: 'var(--card-bg, #fff)', borderRadius: 6, padding: 4,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 100,
+                }}>
+                  {FONT_SIZES.map((fs) => (
+                    <div
+                      key={fs.key}
+                      onClick={() => { setGlobalFontSize(fs.key); setOpenPanel(null); }}
+                      style={{
+                        padding: '6px 12px', cursor: 'pointer', borderRadius: 4, fontSize: 13,
+                        fontWeight: globalFontSize === fs.key ? 700 : 400,
+                        color: 'var(--text-primary, #333)',
+                        background: globalFontSize === fs.key ? 'var(--bg-hover, rgba(22,93,255,0.06))' : 'transparent',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover, #f2f3f5)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = globalFontSize === fs.key ? 'var(--bg-hover, rgba(22,93,255,0.06))' : 'transparent'; }}
+                    >
+                      {globalFontSize === fs.key ? '✓ ' : '   '}{fs.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* 用户头像 */}
-          <Dropdown
-            menu={{
-              items: [
-                { key: 'profile', label: t('header.profile', '个人中心') },
-                { key: 'preferences', label: t('header.preferences', '偏好设置'), onClick: () => navigate('/settings/preferences') },
-                { type: 'divider' },
-                { key: 'logout', label: t('header.logout', '退出登录') },
-              ],
-            }}
-          >
-            <Avatar
-              size="small"
-              icon={<UserOutlined />}
-              style={{ cursor: 'pointer', flexShrink: 0 }}
-            />
-          </Dropdown>
+            {/* 语言切换 */}
+            <div style={{ position: 'relative' }}>
+              <Button
+                type="text"
+                size="small"
+                icon={<GlobalOutlined />}
+                onClick={() => setOpenPanel(openPanel === 'lang' ? null : 'lang')}
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {i18n.language === 'zh' ? '中文' : 'EN'}
+              </Button>
+              {openPanel === 'lang' && (
+                <div style={{
+                  position: 'absolute', top: 36, right: 0, zIndex: 1060,
+                  background: 'var(--card-bg, #fff)', borderRadius: 6, padding: 4,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 100,
+                }}>
+                  {[{ key: 'zh', label: '中文' }, { key: 'en', label: 'English' }].map((lang) => (
+                    <div
+                      key={lang.key}
+                      onClick={() => { i18n.changeLanguage(lang.key); setOpenPanel(null); }}
+                      style={{
+                        padding: '6px 12px', cursor: 'pointer', borderRadius: 4, fontSize: 13,
+                        fontWeight: i18n.language === lang.key ? 700 : 400,
+                        color: 'var(--text-primary, #333)',
+                        background: i18n.language === lang.key ? 'var(--bg-hover, rgba(22,93,255,0.06))' : 'transparent',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover, #f2f3f5)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = i18n.language === lang.key ? 'var(--bg-hover, rgba(22,93,255,0.06))' : 'transparent'; }}
+                    >
+                      {i18n.language === lang.key ? '✓ ' : '   '}{lang.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 用户头像 */}
+            <div style={{ position: 'relative' }}>
+              <Avatar
+                size="small"
+                icon={<UserOutlined />}
+                style={{ cursor: 'pointer', flexShrink: 0 }}
+                onClick={() => setOpenPanel(openPanel === 'user' ? null : 'user')}
+              />
+              {openPanel === 'user' && (
+                <div style={{
+                  position: 'absolute', top: 36, right: 0, zIndex: 1060,
+                  background: 'var(--card-bg, #fff)', borderRadius: 6, padding: 4,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 120,
+                }}>
+                  <div
+                    onClick={() => { navigate('/settings/preferences'); setOpenPanel(null); }}
+                    style={{ padding: '6px 12px', cursor: 'pointer', borderRadius: 4, fontSize: 13, color: 'var(--text-primary, #333)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover, #f2f3f5)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    {t('header.profile', '个人中心')}
+                  </div>
+                  <div
+                    onClick={() => { navigate('/settings/preferences'); setOpenPanel(null); }}
+                    style={{ padding: '6px 12px', cursor: 'pointer', borderRadius: 4, fontSize: 13, color: 'var(--text-primary, #333)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover, #f2f3f5)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    {t('header.preferences', '偏好设置')}
+                  </div>
+                  <div style={{ height: 1, background: 'var(--border-color, #e5e6eb)', margin: '4px 0' }} />
+                  <div
+                    onClick={() => setOpenPanel(null)}
+                    style={{ padding: '6px 12px', cursor: 'pointer', borderRadius: 4, fontSize: 13, color: '#F53F3F' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover, #f2f3f5)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    {t('header.logout', '退出登录')}
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
       </header>
 
