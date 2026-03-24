@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import * as echarts from 'echarts';
 import {
   MetricFlipCard,
   HealthMatrix,
@@ -66,6 +67,44 @@ const activeAlerts: AlertRow[] = [
   { id: '4', severity: 'P2', title: 'disk usage +35% baseline', host: 'analytics', duration: '19m' },
   { id: '5', severity: 'P3', title: 'API P99 latency WoW +25%', host: 'e-comm', duration: '29m' },
 ];
+
+/* 24h 告警趋势 mock 数据 — 每小时一个点 */
+const hours24 = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+const rawAlertData = [
+  12, 8, 6, 5, 4, 3, 5, 14, 28, 35, 32, 26, 22, 18, 20, 25, 30, 27, 22, 18, 15, 14, 13, 12,
+];
+const effectiveAlertData = [
+  5, 3, 2, 2, 1, 1, 2, 6, 12, 18, 16, 12, 10, 8, 9, 11, 14, 12, 10, 8, 6, 5, 5, 5,
+];
+
+/* 最近事件时间线 mock 数据 */
+interface TimelineEvent {
+  id: string;
+  time: string;
+  title: string;
+  severity: 'P0' | 'P1' | 'P2';
+  status: '处理中' | '已解决' | '待处理';
+}
+
+const recentEvents: TimelineEvent[] = [
+  { id: 'e1', time: '10:12', title: 'server-pay-01 unreachable — network port shutdown', severity: 'P0', status: '处理中' },
+  { id: 'e2', time: '10:15', title: 'payment CPU spike 95.3% — retry storm cascade', severity: 'P1', status: '处理中' },
+  { id: 'e3', time: '09:47', title: 'MySQL slow queries exceed 200/min on pay-db-02', severity: 'P1', status: '已解决' },
+  { id: 'e4', time: '09:30', title: 'analytics disk usage abnormal growth +35%', severity: 'P2', status: '待处理' },
+  { id: 'e5', time: '08:55', title: 'e-comm API P99 latency WoW increase 25%', severity: 'P2', status: '已解决' },
+];
+
+const TIMELINE_DOT_COLORS: Record<string, string> = {
+  P0: '#ff6b6b',
+  P1: '#ffaa33',
+  P2: '#4da6ff',
+};
+
+const TIMELINE_STATUS_STYLES: Record<string, { bg: string; fg: string }> = {
+  '处理中': { bg: 'rgba(255,170,50,0.1)', fg: '#ffaa33' },
+  '已解决': { bg: 'rgba(0,229,160,0.1)', fg: '#00e5a0' },
+  '待处理': { bg: 'rgba(77,166,255,0.1)', fg: '#4da6ff' },
+};
 
 const aiSummaryText =
   'Root cause: human-triggered cascade. Operator wanghao executed interface shutdown on switch-core-01 GE0/0/1 at 10:12:03 without change order. ' +
@@ -140,6 +179,85 @@ const mutedText: React.CSSProperties = {
 const Home: React.FC = () => {
   const healthCells = React.useMemo(() => generateHealthCells(), []);
 
+  /* ---------- 24h 告警趋势 ECharts ---------- */
+  const chartRef = useRef<HTMLDivElement>(null);
+  const chartInstance = useRef<echarts.ECharts | null>(null);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const chart = echarts.init(chartRef.current);
+    chartInstance.current = chart;
+
+    chart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(10,16,28,0.9)',
+        borderColor: 'rgba(60,140,255,0.15)',
+        textStyle: { color: '#e2e8f0', fontSize: 11 },
+      },
+      legend: {
+        data: ['raw alerts', 'effective alerts'],
+        top: 6,
+        right: 14,
+        textStyle: { color: 'rgba(140,170,210,0.5)', fontSize: 9 },
+        itemWidth: 12,
+        itemHeight: 3,
+      },
+      grid: { left: 36, right: 14, top: 34, bottom: 22 },
+      xAxis: {
+        type: 'category',
+        data: hours24,
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: 'rgba(60,140,255,0.08)' } },
+        axisLabel: { color: 'rgba(140,170,210,0.4)', fontSize: 8, interval: 3 },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: 'value',
+        splitLine: { lineStyle: { color: 'rgba(60,140,255,0.05)' } },
+        axisLine: { show: false },
+        axisLabel: { color: 'rgba(140,170,210,0.4)', fontSize: 8 },
+      },
+      series: [
+        {
+          name: 'raw alerts',
+          type: 'line',
+          data: rawAlertData,
+          smooth: true,
+          symbol: 'none',
+          lineStyle: { color: 'rgba(140,170,210,0.5)', width: 1.5 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(140,170,210,0.12)' },
+              { offset: 1, color: 'rgba(140,170,210,0.01)' },
+            ]),
+          },
+        },
+        {
+          name: 'effective alerts',
+          type: 'line',
+          data: effectiveAlertData,
+          smooth: true,
+          symbol: 'none',
+          lineStyle: { color: '#4da6ff', width: 2 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(77,166,255,0.25)' },
+              { offset: 1, color: 'rgba(77,166,255,0.02)' },
+            ]),
+          },
+        },
+      ],
+    });
+
+    const handleResize = () => chart.resize();
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.dispose();
+    };
+  }, []);
+
   return (
     <div style={{ padding: 12 }}>
       {/* -------- A. 4 张翻牌指标卡 — demo .cards -------- */}
@@ -205,73 +323,181 @@ const Home: React.FC = () => {
       <NoiseFunnel layers={funnelData} />
 
       {/* -------- C. 主内容区 两栏布局 — demo .main -------- */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 260px', gap: 8, marginTop: 8 }}>
-        {/* 左栏：告警表格 + AI 分析 */}
-        <div style={panelStyle}>
-          <div style={panelHeader}>
-            <span style={panelTitle}>active alerts</span>
-            <span
-              style={{
-                fontSize: 8,
-                padding: '2px 9px',
-                borderRadius: 10,
-                background: 'rgba(255,70,70,0.06)',
-                color: 'var(--color-danger, #ff6b6b)',
-              }}
-            >
-              12 firing
-            </span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 520px', gap: 8, marginTop: 8 }}>
+        {/* 左栏：趋势图 + 告警表格 + 事件时间线 + AI 分析 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+          {/* D. 24h 告警趋势折线图 */}
+          <div style={panelStyle}>
+            <div style={panelHeader}>
+              <span style={panelTitle}>alert trend 24h</span>
+              <span style={mutedText}>raw vs effective</span>
+            </div>
+            <div ref={chartRef} style={{ width: '100%', height: 180 }} />
           </div>
-          {/* 告警表格 — demo .tbl */}
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              {activeAlerts.map((alert) => {
-                const sev = SEVERITY_STYLES[alert.severity] || SEVERITY_STYLES.P3;
-                return (
-                  <tr
-                    key={alert.id}
-                    style={{
-                      cursor: 'pointer',
-                      boxShadow: alert.severity === 'P0' ? `inset 3px 0 0 ${sev.fg}` : undefined,
-                    }}
-                  >
-                    <td style={{ padding: '7px 12px', fontSize: 10, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))' }}>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          fontSize: 8,
-                          fontWeight: 600,
-                          minWidth: 28,
-                          background: sev.bg,
-                          color: sev.fg,
-                        }}
-                      >
-                        {alert.severity}
-                      </span>
-                    </td>
-                    <td style={{ padding: '7px 12px', fontSize: 10, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', color: 'var(--text-primary, #e2e8f0)' }}>
-                      {alert.title}
-                    </td>
-                    <td style={{ padding: '7px 12px', fontSize: 9, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', color: 'var(--color-primary, rgba(77,166,255,0.6))' }}>
-                      {alert.host}
-                    </td>
-                    <td style={{ padding: '7px 12px', fontSize: 9, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', fontFamily: 'ui-monospace, monospace', color: 'var(--text-secondary, rgba(255,170,50,0.5))' }}>
-                      {alert.duration}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+
+          {/* E. 告警表格 + 事件时间线 */}
+          <div style={panelStyle}>
+            <div style={panelHeader}>
+              <span style={panelTitle}>active alerts</span>
+              <span
+                style={{
+                  fontSize: 8,
+                  padding: '2px 9px',
+                  borderRadius: 10,
+                  background: 'rgba(255,70,70,0.06)',
+                  color: 'var(--color-danger, #ff6b6b)',
+                }}
+              >
+                12 firing
+              </span>
+            </div>
+            {/* 告警表格 — demo .tbl */}
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {activeAlerts.map((alert) => {
+                  const sev = SEVERITY_STYLES[alert.severity] || SEVERITY_STYLES.P3;
+                  return (
+                    <tr
+                      key={alert.id}
+                      style={{
+                        cursor: 'pointer',
+                        boxShadow: alert.severity === 'P0' ? `inset 3px 0 0 ${sev.fg}` : undefined,
+                      }}
+                    >
+                      <td style={{ padding: '7px 12px', fontSize: 10, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            fontSize: 8,
+                            fontWeight: 600,
+                            minWidth: 28,
+                            background: sev.bg,
+                            color: sev.fg,
+                          }}
+                        >
+                          {alert.severity}
+                        </span>
+                      </td>
+                      <td style={{ padding: '7px 12px', fontSize: 10, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', color: 'var(--text-primary, #e2e8f0)' }}>
+                        {alert.title}
+                      </td>
+                      <td style={{ padding: '7px 12px', fontSize: 9, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', color: 'var(--color-primary, rgba(77,166,255,0.6))' }}>
+                        {alert.host}
+                      </td>
+                      <td style={{ padding: '7px 12px', fontSize: 9, borderBottom: '1px solid var(--border-color, rgba(60,140,255,0.025))', fontFamily: 'ui-monospace, monospace', color: 'var(--text-secondary, rgba(255,170,50,0.5))' }}>
+                        {alert.duration}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* F. 最近事件时间线 */}
+            <div style={{ borderTop: '1px solid var(--border-color, rgba(60,140,255,0.04))', padding: '8px 0 4px' }}>
+              <div style={{ ...panelHeader, borderBottom: 'none', paddingBottom: 4 }}>
+                <span style={panelTitle}>recent events</span>
+                <span style={mutedText}>latest 5</span>
+              </div>
+              <div style={{ padding: '0 14px 8px', position: 'relative' }}>
+                {recentEvents.map((evt, idx) => {
+                  const dotColor = TIMELINE_DOT_COLORS[evt.severity] || '#4da6ff';
+                  const statusStyle = TIMELINE_STATUS_STYLES[evt.status] || TIMELINE_STATUS_STYLES['待处理'];
+                  const isLast = idx === recentEvents.length - 1;
+                  return (
+                    <div
+                      key={evt.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        position: 'relative',
+                        paddingBottom: isLast ? 0 : 10,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {/* 竖线 + 圆点 */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 12, flexShrink: 0, paddingTop: 2 }}>
+                        <div
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: dotColor,
+                            boxShadow: `0 0 6px ${dotColor}55`,
+                            flexShrink: 0,
+                          }}
+                        />
+                        {!isLast && (
+                          <div
+                            style={{
+                              width: 1.5,
+                              flex: 1,
+                              minHeight: 16,
+                              background: `linear-gradient(to bottom, ${dotColor}44, rgba(60,140,255,0.06))`,
+                            }}
+                          />
+                        )}
+                      </div>
+                      {/* 事件内容 */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <span style={{ fontSize: 8, fontFamily: 'ui-monospace, monospace', color: 'var(--text-secondary, rgba(140,170,210,0.4))' }}>
+                            {evt.time}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 7,
+                              padding: '1px 5px',
+                              borderRadius: 3,
+                              fontWeight: 600,
+                              background: (SEVERITY_STYLES[evt.severity] || SEVERITY_STYLES.P2).bg,
+                              color: (SEVERITY_STYLES[evt.severity] || SEVERITY_STYLES.P2).fg,
+                            }}
+                          >
+                            {evt.severity}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 7,
+                              padding: '1px 5px',
+                              borderRadius: 3,
+                              background: statusStyle.bg,
+                              color: statusStyle.fg,
+                            }}
+                          >
+                            {evt.status}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 9,
+                            color: 'var(--text-primary, rgba(200,220,240,0.75))',
+                            lineHeight: 1.4,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {evt.title}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
           {/* AI 根因分析 — demo .ai */}
           <div
             style={{
-              margin: '8px 12px 10px',
+              ...panelStyle,
               borderRadius: '0 10px 10px 0',
               padding: '10px 14px',
               position: 'relative',

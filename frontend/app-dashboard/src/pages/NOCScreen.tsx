@@ -289,6 +289,74 @@ const ResourceChart: React.FC<{ data: ResourceMetricPoint[] }> = ({ data }) => {
   );
 };
 
+/* ========== 滚动字幕组件 ========== */
+
+const marqueeAlerts = [
+  { text: '[P0] server-pay-01 不可达 - payment 集群', color: '#ff6b6b' },
+  { text: '[P1] CPU 95.3% 超阈值 - db-master-02', color: '#ffaa33' },
+  { text: '[P0] CDN 回源带宽异常增长 200% - CloudWatch', color: '#ff6b6b' },
+  { text: '[P1] ElasticSearch 集群磁盘使用率 > 80%', color: '#ffaa33' },
+  { text: '[P0] prod-db-master-01 主从复制延迟 > 60s', color: '#ff6b6b' },
+  { text: '[P1] payment-api 错误率突增至 3.2%', color: '#ffaa33' },
+  { text: '[P1] k8s-node-07 CPU 使用率持续 > 90%', color: '#ffaa33' },
+  { text: '[P0] 支付网关 P99 响应时间 > 5s', color: '#ff6b6b' },
+];
+
+const MARQUEE_KEYFRAMES_ID = 'noc-marquee-keyframes';
+
+const MarqueeBar: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // 注入 keyframes 到 document.head（仅一次）
+    if (!document.getElementById(MARQUEE_KEYFRAMES_ID)) {
+      const style = document.createElement('style');
+      style.id = MARQUEE_KEYFRAMES_ID;
+      style.textContent = `
+        @keyframes nocMarqueeScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    return () => {
+      const el = document.getElementById(MARQUEE_KEYFRAMES_ID);
+      if (el) el.remove();
+    };
+  }, []);
+
+  const marqueeContent = marqueeAlerts.map((a) => a.text).join('');
+  // 根据内容长度动态计算动画时长，保持匀速
+  const duration = Math.max(20, marqueeContent.length * 0.4);
+
+  return (
+    <div ref={containerRef} className="noc-marquee-bar">
+      <div
+        ref={contentRef}
+        className="noc-marquee-track"
+        style={{ animation: `nocMarqueeScroll ${duration}s linear infinite` }}
+      >
+        {/* 渲染两份内容实现无缝滚动 */}
+        {[0, 1].map((round) => (
+          <div key={round} className="noc-marquee-group">
+            {marqueeAlerts.map((alert, idx) => (
+              <span
+                key={`${round}-${idx}`}
+                className="noc-marquee-item"
+                style={{ color: alert.color, textShadow: `0 0 6px ${alert.color}40` }}
+              >
+                {alert.text}
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /* ========== 主组件 ========== */
 
 const NOCScreen: React.FC = () => {
@@ -491,6 +559,9 @@ const NOCScreen: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* ==================== 底部滚动字幕栏 ==================== */}
+      <MarqueeBar />
     </div>
   );
 };

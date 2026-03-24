@@ -30,5 +30,21 @@
   "placeholder.alertStream": "Real-time alert stream pending (WebSocket)",
   "placeholder.healthMatrix": "Business health matrix pending (ECharts)",
   "placeholder.resourceCharts": "Resource curve charts pending (ECharts)",
-  "placeholder.cockpitMini": "Cockpit mini view pending"
+  "placeholder.cockpitMini": "Cockpit mini view pending",
+
+  "bigScreen.title": "OpsNexus Dashboard",
+  "bigScreen.metric.activeAlerts": "Active Alerts",
+  "bigScreen.metric.alertSub": "P0: {{p0}} / P1: {{p1}}",
+  "bigScreen.metric.activeIncidents": "Active Incidents",
+  "bigScreen.metric.incidentSub": "Processing: {{processing}}",
+  "bigScreen.metric.slaHealth": "SLA Health",
+  "bigScreen.metric.slaSub": "Target: {{target}}",
+  "bigScreen.metric.assetOnline": "Assets Online",
+  "bigScreen.metric.assetSub": "Total: {{total}}",
+  "bigScreen.metric.logThroughput": "Log Throughput",
+  "bigScreen.metric.logSub": "entries/sec",
+  "bigScreen.chart.topAlertAssets": "Top Alert Assets",
+  "bigScreen.chart.incidentTimeline": "Incident Timeline",
+  "bigScreen.chart.logVolume": "Log Volume Trend",
+  "bigScreen.chart.placeholder": "Loading data..."
 }

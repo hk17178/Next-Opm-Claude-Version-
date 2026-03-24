@@ -30,5 +30,21 @@
   "placeholder.alertStream": "实时告警流待集成 (WebSocket)",
   "placeholder.healthMatrix": "业务健康矩阵待集成 (ECharts)",
   "placeholder.resourceCharts": "资源曲线图待集成 (ECharts)",
-  "placeholder.cockpitMini": "驾驶舱精简版待集成"
+  "placeholder.cockpitMini": "驾驶舱精简版待集成",
+
+  "bigScreen.title": "OpsNexus 运维大屏",
+  "bigScreen.metric.activeAlerts": "活跃告警",
+  "bigScreen.metric.alertSub": "P0: {{p0}} / P1: {{p1}}",
+  "bigScreen.metric.activeIncidents": "活跃事件",
+  "bigScreen.metric.incidentSub": "处理中: {{processing}}",
+  "bigScreen.metric.slaHealth": "SLA 健康度",
+  "bigScreen.metric.slaSub": "目标: {{target}}",
+  "bigScreen.metric.assetOnline": "资产在线",
+  "bigScreen.metric.assetSub": "总计: {{total}}",
+  "bigScreen.metric.logThroughput": "日志吞吐",
+  "bigScreen.metric.logSub": "条/秒",
+  "bigScreen.chart.topAlertAssets": "TOP 告警资产",
+  "bigScreen.chart.incidentTimeline": "事件时间线",
+  "bigScreen.chart.logVolume": "日志量趋势",
+  "bigScreen.chart.placeholder": "数据加载中..."
 }

@@ -43,5 +43,15 @@ export { ChartCard } from './components/ChartCard';
 export { HealthMatrix } from './components/HealthMatrix';
 export type { HealthCell } from './components/HealthMatrix';
 
+// Big-screen / Dashboard components
+export { ScrollingMarquee } from './components/ScrollingMarquee';
+export type { ScrollingMarqueeProps, ScrollingMarqueeItem } from './components/ScrollingMarquee';
+export { Countdown } from './components/Countdown';
+export type { CountdownProps } from './components/Countdown';
+export { SystemClock } from './components/SystemClock';
+export type { SystemClockProps } from './components/SystemClock';
+export { ScrollingList } from './components/ScrollingList';
+export type { ScrollingListProps, ScrollingListItem } from './components/ScrollingList';
+
 // Theme
 export { SEVERITY_COLORS, ROOT_CAUSE_COLORS, ASSET_GRADE_COLORS } from './theme';

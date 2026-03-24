@@ -12,6 +12,8 @@ import {
   fetchDashboardSummary, fetchAlertTrend7d, fetchRecentAlerts,
   type DashboardSummary, type AlertTrendPoint, type RecentAlert,
 } from '../api/dashboard';
+import { HealthMatrix } from '@opsnexus/ui-kit';
+import type { HealthCell } from '@opsnexus/ui-kit';
 
 const { Text } = Typography;
 
@@ -70,6 +72,65 @@ function mockRecentAlerts(): RecentAlert[] {
     status: i < 3 ? 'firing' : 'acknowledged',
   }));
 }
+
+/** 生成业务健康矩阵 mock 数据 — 5行(业务线)×5列(技术层级) */
+function generateHealthCells(): HealthCell[] {
+  const rows = ['payment', 'ecommerce', 'risk', 'logistics', 'account'];
+  const cols = ['NET', 'HOST', 'APP', 'DB', 'MW'];
+
+  const statusMap: Record<string, HealthCell['status']> = {
+    'payment-NET': 'ok', 'payment-HOST': 'critical', 'payment-APP': 'degraded', 'payment-DB': 'ok', 'payment-MW': 'ok',
+    'ecommerce-NET': 'ok', 'ecommerce-HOST': 'ok', 'ecommerce-APP': 'ok', 'ecommerce-DB': 'degraded', 'ecommerce-MW': 'ok',
+    'risk-NET': 'ok', 'risk-HOST': 'ok', 'risk-APP': 'ok', 'risk-DB': 'ok', 'risk-MW': 'ok',
+    'logistics-NET': 'degraded', 'logistics-HOST': 'ok', 'logistics-APP': 'ok', 'logistics-DB': 'ok', 'logistics-MW': 'ok',
+    'account-NET': 'ok', 'account-HOST': 'ok', 'account-APP': 'critical', 'account-DB': 'ok', 'account-MW': 'degraded',
+  };
+
+  const detailsMap: Record<string, HealthCell['details']> = {
+    'payment-NET': { cpu: 35, mem: 42 }, 'payment-HOST': { cpu: 96, mem: 88, disk: 72 }, 'payment-APP': { conn: 320, cpu: 78 },
+    'payment-DB': { cpu: 45, disk: 55 }, 'payment-MW': { conn: 12, cpu: 30 },
+    'ecommerce-NET': { cpu: 28, mem: 38 }, 'ecommerce-HOST': { cpu: 52, mem: 60 }, 'ecommerce-APP': { cpu: 48, conn: 150 },
+    'ecommerce-DB': { disk: 82, cpu: 65 }, 'ecommerce-MW': { conn: 8, cpu: 25 },
+    'risk-NET': { cpu: 22, mem: 30 }, 'risk-HOST': { cpu: 40, mem: 45 }, 'risk-APP': { cpu: 38, conn: 90 },
+    'risk-DB': { cpu: 42, disk: 50 }, 'risk-MW': { conn: 5, cpu: 20 },
+    'logistics-NET': { cpu: 75, mem: 70 }, 'logistics-HOST': { cpu: 50, mem: 55 }, 'logistics-APP': { cpu: 42, conn: 110 },
+    'logistics-DB': { cpu: 38, disk: 48 }, 'logistics-MW': { conn: 6, cpu: 28 },
+    'account-NET': { cpu: 30, mem: 35 }, 'account-HOST': { cpu: 55, mem: 50 }, 'account-APP': { cpu: 92, conn: 450 },
+    'account-DB': { cpu: 40, disk: 52 }, 'account-MW': { conn: 15, cpu: 72 },
+  };
+
+  return rows.flatMap((row) =>
+    cols.map((col) => {
+      const key = `${row}-${col}`;
+      return {
+        id: key,
+        label: `${row}/${col}`,
+        status: statusMap[key] || 'ok',
+        details: detailsMap[key],
+      } satisfies HealthCell;
+    }),
+  );
+}
+
+/** 生成 7 天资源趋势 mock 数据（CPU + 内存使用率百分比） */
+function generateResourceTrendData(): { dates: string[]; cpu: number[]; mem: number[] } {
+  const dates: string[] = [];
+  const cpu: number[] = [];
+  const mem: number[] = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    dates.push(`${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`);
+    // CPU 基线 55-75%，内存基线 60-80%，模拟波动
+    cpu.push(Math.round(55 + Math.random() * 20 + (i === 2 ? 18 : 0)));  // 第5天有个尖峰
+    mem.push(Math.round(60 + Math.random() * 20 + (i === 1 ? 12 : 0)));  // 第6天内存偏高
+  }
+  return { dates, cpu, mem };
+}
+
+const healthCells = generateHealthCells();
+const resourceTrend = generateResourceTrendData();
 
 /**
  * 告警趋势折线图组件（轻量 SVG 实现）
@@ -147,6 +208,7 @@ const Dashboard: React.FC = () => {
   const [recentAlerts, setRecentAlerts] = useState<RecentAlert[]>([]);           // 最近未处理告警
 
   const trendRef = useRef<HTMLDivElement>(null);
+  const resourceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!trendRef.current) return;
@@ -174,6 +236,98 @@ const Dashboard: React.FC = () => {
         itemStyle: { color: '#3491FA' },
         areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(52,145,250,0.25)' }, { offset: 1, color: 'rgba(52,145,250,0)' }] } },
       }],
+    });
+    const handleResize = () => chart.resize();
+    window.addEventListener('resize', handleResize);
+    return () => { window.removeEventListener('resize', handleResize); chart.dispose(); };
+  }, []);
+
+  /** 资源趋势曲线 ECharts 初始化 — CPU + 内存双线图 */
+  useEffect(() => {
+    if (!resourceRef.current) return;
+    const chart = echarts.init(resourceRef.current);
+    const style = getComputedStyle(document.documentElement);
+    const borderColor = style.getPropertyValue('--border-primary').trim() || '#E5E6EB';
+    const textColor = style.getPropertyValue('--text-tertiary').trim() || '#86909C';
+
+    chart.setOption({
+      grid: { left: 46, right: 16, top: 36, bottom: 28 },
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'var(--card-bg, #1D2129)',
+        borderColor: 'var(--border-primary, #333)',
+        textStyle: { color: 'var(--text-primary, #F2F3F5)' },
+        formatter: (params: Array<{ seriesName: string; value: number; axisValue: string }>) => {
+          if (!Array.isArray(params) || params.length === 0) return '';
+          let tip = `<div style="font-size:12px;margin-bottom:4px">${params[0].axisValue}</div>`;
+          params.forEach((p: { seriesName: string; value: number }) => {
+            tip += `<div style="font-size:12px">${p.seriesName}: <b>${p.value}%</b></div>`;
+          });
+          return tip;
+        },
+      },
+      legend: {
+        data: ['CPU', 'Memory'],
+        top: 4,
+        right: 16,
+        textStyle: { color: textColor, fontSize: 11 },
+        icon: 'roundRect',
+        itemWidth: 12,
+        itemHeight: 3,
+      },
+      xAxis: {
+        type: 'category',
+        data: resourceTrend.dates,
+        axisLine: { lineStyle: { color: borderColor } },
+        axisLabel: { color: textColor, fontSize: 10 },
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: 100,
+        splitLine: { lineStyle: { color: borderColor, type: 'dashed' } },
+        axisLabel: { color: textColor, fontSize: 10, formatter: '{value}%' },
+      },
+      series: [
+        {
+          name: 'CPU',
+          type: 'line',
+          smooth: true,
+          data: resourceTrend.cpu,
+          lineStyle: { color: '#3491FA', width: 2 },
+          itemStyle: { color: '#3491FA' },
+          areaStyle: {
+            color: {
+              type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(52,145,250,0.2)' },
+                { offset: 1, color: 'rgba(52,145,250,0)' },
+              ],
+            },
+          },
+          symbol: 'circle',
+          symbolSize: 5,
+        },
+        {
+          name: 'Memory',
+          type: 'line',
+          smooth: true,
+          data: resourceTrend.mem,
+          lineStyle: { color: '#00B42A', width: 2 },
+          itemStyle: { color: '#00B42A' },
+          areaStyle: {
+            color: {
+              type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(0,180,42,0.2)' },
+                { offset: 1, color: 'rgba(0,180,42,0)' },
+              ],
+            },
+          },
+          symbol: 'circle',
+          symbolSize: 5,
+        },
+      ],
     });
     const handleResize = () => chart.resize();
     window.addEventListener('resize', handleResize);
@@ -374,28 +528,47 @@ const Dashboard: React.FC = () => {
           </Col>
         </Row>
 
-        {/* 业务健康矩阵 + 资源趋势曲线（待集成） */}
+        {/* 业务健康矩阵 + 资源趋势曲线 */}
         <Row gutter={16} style={{ marginTop: 16 }}>
           <Col span={12}>
             <Card
               title={<span className="dashboard-card-title">{t('businessHealth')}</span>}
-              style={{ background: 'var(--card-bg)', borderRadius: 8, border: '1px solid var(--border-primary)', minHeight: 250 }}
-              bodyStyle={{ padding: 16 }}
+              style={{
+                background: 'var(--card-bg, #1D2129)',
+                borderRadius: 8,
+                border: '1px solid var(--border-primary, #333)',
+                minHeight: 250,
+              }}
+              bodyStyle={{ padding: 0 }}
             >
-              <div className="dashboard-placeholder">
-                {t('placeholder.healthMatrix')}
-              </div>
+              <HealthMatrix
+                cells={healthCells}
+                rows={5}
+                cols={5}
+                cellHeight={28}
+                colLabels={['NET', 'HOST', 'APP', 'DB', 'MW']}
+                rowLabels={['pay', 'shop', 'risk', 'logi', 'acct']}
+              />
             </Card>
           </Col>
           <Col span={12}>
             <Card
               title={<span className="dashboard-card-title">{t('resourceCurves')}</span>}
-              style={{ background: 'var(--card-bg)', borderRadius: 8, border: '1px solid var(--border-primary)', minHeight: 250 }}
+              style={{
+                background: 'var(--card-bg, #1D2129)',
+                borderRadius: 8,
+                border: '1px solid var(--border-primary, #333)',
+                minHeight: 250,
+              }}
               bodyStyle={{ padding: 16 }}
             >
-              <div className="dashboard-placeholder">
-                {t('placeholder.resourceCharts')}
-              </div>
+              <div
+                ref={resourceRef}
+                style={{
+                  height: 180,
+                  width: '100%',
+                }}
+              />
             </Card>
           </Col>
         </Row>
