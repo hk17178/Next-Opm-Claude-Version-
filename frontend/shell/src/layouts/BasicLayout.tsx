@@ -67,7 +67,14 @@ import { useTheme } from '../hooks/useTheme';
 import { useDensity } from '../hooks/useDensity';
 import NotificationBell from '../components/NotificationBell';
 import ConnectionIndicator from '../components/ConnectionIndicator';
-import { ParticleCanvas } from '@opsnexus/ui-kit';
+
+// ParticleCanvas 通过 React.lazy + dynamic import 加载
+// 避免 ui-kit 加载失败时整个 shell 崩溃
+const LazyParticleCanvas = React.lazy(() =>
+  import('@opsnexus/ui-kit')
+    .then(mod => ({ default: mod.ParticleCanvas }))
+    .catch(() => ({ default: (() => null) as React.FC<{ isDark?: boolean }> }))
+);
 
 /* ─── 菜单数据结构 ─── */
 
@@ -236,9 +243,11 @@ const BasicLayout: React.FC = () => {
       <ConnectionIndicator connected={wsConnected} />
 
       {/* 粒子网络背景 */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <ParticleCanvas isDark={isDark} />
-      </div>
+      <React.Suspense fallback={null}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <LazyParticleCanvas isDark={isDark} />
+        </div>
+      </React.Suspense>
 
       {/* ─── Header ─── */}
       <header
