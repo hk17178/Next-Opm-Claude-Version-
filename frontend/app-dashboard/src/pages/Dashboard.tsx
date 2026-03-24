@@ -528,17 +528,12 @@ const Dashboard: React.FC = () => {
           </Col>
         </Row>
 
-        {/* 业务健康矩阵 + 资源趋势曲线 */}
+        {/* 业务健康矩阵 + 资源趋势曲线 — span 与上方行对齐 10+14 */}
         <Row gutter={16} style={{ marginTop: 16 }}>
-          <Col span={12}>
+          <Col span={10}>
             <Card
               title={<span className="dashboard-card-title">{t('businessHealth')}</span>}
-              style={{
-                background: 'var(--card-bg, #1D2129)',
-                borderRadius: 8,
-                border: '1px solid var(--border-primary, #333)',
-                minHeight: 250,
-              }}
+              style={{ background: 'var(--card-bg)', borderRadius: 8, border: '1px solid var(--border-primary)', minHeight: 250 }}
               bodyStyle={{ padding: 0 }}
             >
               <HealthMatrix
@@ -551,23 +546,15 @@ const Dashboard: React.FC = () => {
               />
             </Card>
           </Col>
-          <Col span={12}>
+          <Col span={14}>
             <Card
               title={<span className="dashboard-card-title">{t('resourceCurves')}</span>}
-              style={{
-                background: 'var(--card-bg, #1D2129)',
-                borderRadius: 8,
-                border: '1px solid var(--border-primary, #333)',
-                minHeight: 250,
-              }}
+              style={{ background: 'var(--card-bg)', borderRadius: 8, border: '1px solid var(--border-primary)', minHeight: 250 }}
               bodyStyle={{ padding: 16 }}
             >
               <div
                 ref={resourceRef}
-                style={{
-                  height: 180,
-                  width: '100%',
-                }}
+                style={{ height: 180, width: '100%' }}
               />
             </Card>
           </Col>
