@@ -208,7 +208,7 @@ func loadConfig(path string) (*Config, error) {
 	cfg.Postgres.Host = "localhost"
 	cfg.Postgres.Port = 5432
 	cfg.Postgres.User = "opm"
-	cfg.Postgres.Password = "opm_secret"
+	cfg.Postgres.Password = os.Getenv("DB_PASSWORD") // 从环境变量读取，禁止硬编码
 	cfg.Postgres.Database = "opm_log"
 	cfg.Postgres.MaxOpenConns = 20
 	cfg.Postgres.MaxIdleConns = 5
