@@ -45,11 +45,11 @@ function generateHealthCells(): HealthCell[] {
 }
 
 const funnelData = [
-  { label: 'raw', value: 175 },
-  { label: 'filtered', value: 140 },
-  { label: 'merged', value: 72 },
-  { label: 'AI cut', value: 47 },
-  { label: 'human', value: 47 },
+  { label: '原始告警', value: 175 },
+  { label: '维护过滤', value: 140 },
+  { label: '合并聚合', value: 72 },
+  { label: 'AI 抑制', value: 47 },
+  { label: '人工处理', value: 47 },
 ];
 
 interface AlertRow {
@@ -61,11 +61,11 @@ interface AlertRow {
 }
 
 const activeAlerts: AlertRow[] = [
-  { id: '1', severity: 'P0', title: 'server-pay-01 unreachable', host: 'payment', duration: '15m' },
-  { id: '2', severity: 'P1', title: 'CPU 95.3% > threshold', host: 'payment', duration: '15m' },
-  { id: '3', severity: 'P1', title: 'MySQL slow queries 200/min', host: 'payment', duration: '17m' },
-  { id: '4', severity: 'P2', title: 'disk usage +35% baseline', host: 'analytics', duration: '19m' },
-  { id: '5', severity: 'P3', title: 'API P99 latency WoW +25%', host: 'e-comm', duration: '29m' },
+  { id: '1', severity: 'P0', title: '支付服务器 pay-01 不可达', host: 'payment', duration: '15m' },
+  { id: '2', severity: 'P1', title: 'CPU 95.3% 超过阈值', host: 'payment', duration: '15m' },
+  { id: '3', severity: 'P1', title: 'MySQL 慢查询 200次/分钟', host: 'payment', duration: '17m' },
+  { id: '4', severity: 'P2', title: '磁盘使用量超基线 +35%', host: 'analytics', duration: '19m' },
+  { id: '5', severity: 'P3', title: 'API P99 延迟环比 +25%', host: 'e-comm', duration: '29m' },
 ];
 
 /* 24h 告警趋势 mock 数据 — 每小时一个点 */
@@ -87,11 +87,11 @@ interface TimelineEvent {
 }
 
 const recentEvents: TimelineEvent[] = [
-  { id: 'e1', time: '10:12', title: 'server-pay-01 unreachable — network port shutdown', severity: 'P0', status: '处理中' },
-  { id: 'e2', time: '10:15', title: 'payment CPU spike 95.3% — retry storm cascade', severity: 'P1', status: '处理中' },
-  { id: 'e3', time: '09:47', title: 'MySQL slow queries exceed 200/min on pay-db-02', severity: 'P1', status: '已解决' },
-  { id: 'e4', time: '09:30', title: 'analytics disk usage abnormal growth +35%', severity: 'P2', status: '待处理' },
-  { id: 'e5', time: '08:55', title: 'e-comm API P99 latency WoW increase 25%', severity: 'P2', status: '已解决' },
+  { id: 'e1', time: '10:12', title: '支付服务器 pay-01 不可达 — 网络端口被关闭', severity: 'P0', status: '处理中' },
+  { id: 'e2', time: '10:15', title: '支付集群 CPU 飙升 95.3% — 重试风暴级联', severity: 'P1', status: '处理中' },
+  { id: 'e3', time: '09:47', title: 'pay-db-02 MySQL 慢查询超过 200次/分钟', severity: 'P1', status: '已解决' },
+  { id: 'e4', time: '09:30', title: '分析平台磁盘使用量异常增长 +35%', severity: 'P2', status: '待处理' },
+  { id: 'e5', time: '08:55', title: '电商 API P99 延迟环比上升 25%', severity: 'P2', status: '已解决' },
 ];
 
 const TIMELINE_DOT_COLORS: Record<string, string> = {
@@ -107,9 +107,9 @@ const TIMELINE_STATUS_STYLES: Record<string, { bg: string; fg: string }> = {
 };
 
 const aiSummaryText =
-  'Root cause: human-triggered cascade. Operator wanghao executed interface shutdown on switch-core-01 GE0/0/1 at 10:12:03 without change order. ' +
-  'This caused connectivity loss for 3 downstream payment hosts, triggering CPU spike from retry storms. ' +
-  'Recommend: immediate port re-enable + post-incident review.';
+  '根因分析：人为触发的级联故障。运维人员王浩在 10:12:03 未提交变更工单的情况下，对核心交换机 switch-core-01 的 GE0/0/1 端口执行了关闭操作。' +
+  '这导致 3 台下游支付服务器失去连接，引发重试风暴导致 CPU 飙升。' +
+  '建议：立即重新启用端口 + 启动事后复盘流程。';
 
 interface OnCallMember {
   initials: string;
@@ -126,9 +126,9 @@ interface OnCallMember {
 }
 
 const onCallTeam: OnCallMember[] = [
-  { initials: 'ZW', name: 'zhangwei', role: 'primary', status: 'P0', statusColor: 'var(--color-danger, #ff6b6b)', avatarBg: 'rgba(255,70,70,0.06)', phone: '138****6721', backLabel2: 'last resp', backValue2: '2 min', backLabel3: 'today', backValue3: '6 handled' },
-  { initials: 'CJ', name: 'chenjing', role: 'backup', status: 'standby', statusColor: 'var(--color-success, #00e5a0)', avatarBg: 'rgba(0,229,160,0.06)', phone: '139****8834', backLabel2: 'last resp', backValue2: '8 min', backLabel3: 'today', backValue3: '2 handled' },
-  { initials: 'LM', name: 'liming', role: 'supervisor', status: 'online', statusColor: 'var(--color-primary, #4da6ff)', avatarBg: 'rgba(77,166,255,0.06)', phone: '137****4412', backLabel2: 'escalated', backValue2: '1 P0', backLabel3: 'approved', backValue3: '3 changes' },
+  { initials: 'ZW', name: '张伟', role: '主值班', status: 'P0', statusColor: 'var(--color-danger, #ff6b6b)', avatarBg: 'rgba(255,70,70,0.06)', phone: '138****6721', backLabel2: '最近响应', backValue2: '2 分钟', backLabel3: '今日', backValue3: '处理 6 条' },
+  { initials: 'CJ', name: '陈静', role: '副值班', status: '待命', statusColor: 'var(--color-success, #00e5a0)', avatarBg: 'rgba(0,229,160,0.06)', phone: '139****8834', backLabel2: '最近响应', backValue2: '8 分钟', backLabel3: '今日', backValue3: '处理 2 条' },
+  { initials: 'LM', name: '李明', role: '主管', status: '在线', statusColor: 'var(--color-primary, #4da6ff)', avatarBg: 'rgba(77,166,255,0.06)', phone: '137****4412', backLabel2: '已升级', backValue2: '1 P0', backLabel3: '已审批', backValue3: '3 个变更' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -196,7 +196,7 @@ const Home: React.FC = () => {
         textStyle: { color: '#e2e8f0', fontSize: 11 },
       },
       legend: {
-        data: ['raw alerts', 'effective alerts'],
+        data: ['原始告警', '有效告警'],
         top: 6,
         right: 14,
         textStyle: { color: 'rgba(140,170,210,0.5)', fontSize: 9 },
@@ -220,7 +220,7 @@ const Home: React.FC = () => {
       },
       series: [
         {
-          name: 'raw alerts',
+          name: '原始告警',
           type: 'line',
           data: rawAlertData,
           smooth: true,
@@ -234,7 +234,7 @@ const Home: React.FC = () => {
           },
         },
         {
-          name: 'effective alerts',
+          name: '有效告警',
           type: 'line',
           data: effectiveAlertData,
           smooth: true,
@@ -263,10 +263,10 @@ const Home: React.FC = () => {
       {/* -------- A. 4 张翻牌指标卡 — demo .cards -------- */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 10 }}>
         <MetricFlipCard
-          label="FIRING ALERTS"
+          label="当前告警"
           value={12}
           trend="up"
-          trendValue="+3 vs yesterday"
+          trendValue="+3 较昨日"
           color="var(--color-danger, #ff6b6b)"
           scanColor="rgba(255,70,70,0.4)"
           backItems={[
@@ -274,34 +274,34 @@ const Home: React.FC = () => {
             { label: 'P1', value: 4 },
             { label: 'P2', value: 5 },
             { label: 'P3', value: 2 },
-            { label: 'peak today', value: '18 (09:30)' },
+            { label: '今日峰值', value: '18 (09:30)' },
           ]}
         />
         <MetricFlipCard
-          label="RESOLVED TODAY"
+          label="今日已解决"
           value={35}
           trend="down"
-          trendValue="+5 vs yesterday"
+          trendValue="+5 较昨日"
           color="var(--color-success, #00e5a0)"
           scanColor="rgba(0,229,160,0.4)"
           backItems={[
-            { label: 'auto-resolved', value: 22 },
-            { label: 'manual ack', value: 13 },
-            { label: 'avg resolve', value: '14 min' },
-            { label: 'MTTR trend', value: '-18%' },
+            { label: '自动恢复', value: 22 },
+            { label: '人工确认', value: 13 },
+            { label: '平均解决', value: '14 min' },
+            { label: 'MTTR 趋势', value: '-18%' },
           ]}
         />
         <MetricFlipCard
-          label="NOISE REDUCTION"
+          label="降噪率"
           value="73%"
           color="var(--color-primary, #4da6ff)"
           scanColor="rgba(77,166,255,0.4)"
           backItems={[
-            { label: 'maint window', value: 35 },
-            { label: 'convergence', value: 68 },
-            { label: 'baseline', value: 12 },
-            { label: 'AI suppress', value: 13 },
-            { label: 'false +', value: '2.1%' },
+            { label: '维护窗口', value: 35 },
+            { label: '收敛合并', value: 68 },
+            { label: '基线过滤', value: 12 },
+            { label: 'AI 抑制', value: 13 },
+            { label: '误报率', value: '2.1%' },
           ]}
         />
         <MetricFlipCard
@@ -310,10 +310,10 @@ const Home: React.FC = () => {
           color="var(--color-success, #00e5a0)"
           scanColor="rgba(0,229,160,0.4)"
           backItems={[
-            { label: 'detect', value: '2 min' },
-            { label: 'triage', value: '5 min' },
-            { label: 'fix', value: '8 min' },
-            { label: 'verify', value: '3 min' },
+            { label: '检测', value: '2 min' },
+            { label: '定位', value: '5 min' },
+            { label: '修复', value: '8 min' },
+            { label: '验证', value: '3 min' },
             { label: 'P0 MTTR', value: '32 min' },
           ]}
         />
@@ -330,8 +330,8 @@ const Home: React.FC = () => {
           {/* D. 24h 告警趋势折线图 */}
           <div style={panelStyle}>
             <div style={panelHeader}>
-              <span style={panelTitle}>alert trend 24h</span>
-              <span style={mutedText}>raw vs effective</span>
+              <span style={panelTitle}>告警趋势 24h</span>
+              <span style={mutedText}>原始 vs 有效</span>
             </div>
             <div ref={chartRef} style={{ width: '100%', height: 180 }} />
           </div>
@@ -339,7 +339,7 @@ const Home: React.FC = () => {
           {/* E. 告警表格 + 事件时间线 */}
           <div style={panelStyle}>
             <div style={panelHeader}>
-              <span style={panelTitle}>active alerts</span>
+              <span style={panelTitle}>活跃告警</span>
               <span
                 style={{
                   fontSize: 8,
@@ -349,7 +349,7 @@ const Home: React.FC = () => {
                   color: 'var(--color-danger, #ff6b6b)',
                 }}
               >
-                12 firing
+                12 条触发中
               </span>
             </div>
             {/* 告警表格 — demo .tbl */}
@@ -401,8 +401,8 @@ const Home: React.FC = () => {
             {/* F. 最近事件时间线 */}
             <div style={{ borderTop: '1px solid var(--border-color, rgba(60,140,255,0.04))', padding: '8px 0 4px' }}>
               <div style={{ ...panelHeader, borderBottom: 'none', paddingBottom: 4 }}>
-                <span style={panelTitle}>recent events</span>
-                <span style={mutedText}>latest 5</span>
+                <span style={panelTitle}>最近事件</span>
+                <span style={mutedText}>最近 5 条</span>
               </div>
               <div style={{ padding: '0 14px 8px', position: 'relative' }}>
                 {recentEvents.map((evt, idx) => {
@@ -508,7 +508,7 @@ const Home: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 500, marginBottom: 5, color: 'var(--color-success, #00e5a0)' }}>
               <LiveDot size={5} label="" />
-              <span>AI root cause analysis</span>
+              <span>AI 根因分析</span>
               <span
                 style={{
                   fontSize: 8,
@@ -532,7 +532,7 @@ const Home: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* SLA 环形仪表盘 — demo .ring-box */}
           <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 14 }}>
-            <span style={panelTitle}>platform SLA</span>
+            <span style={panelTitle}>平台 SLA</span>
             <div style={{ position: 'relative', width: 110, height: 110, margin: '4px 0' }}>
               <RingGauge value={99.97} max={100} size={110} strokeWidth={5} />
               <div
@@ -546,7 +546,7 @@ const Home: React.FC = () => {
                 }}
               >
                 <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-success, #00e5a0)' }}>99.97</div>
-                <div style={{ fontSize: 8, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>% uptime</div>
+                <div style={{ fontSize: 8, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>% 可用率</div>
               </div>
             </div>
           </div>
@@ -554,8 +554,8 @@ const Home: React.FC = () => {
           {/* 业务健康矩阵 — demo .hg */}
           <div style={panelStyle}>
             <div style={panelHeader}>
-              <span style={panelTitle}>business health matrix</span>
-              <span style={mutedText}>hover to flip</span>
+              <span style={panelTitle}>业务健康矩阵</span>
+              <span style={mutedText}>悬停翻转</span>
             </div>
             <HealthMatrix
               cells={healthCells}
@@ -563,15 +563,15 @@ const Home: React.FC = () => {
               cols={5}
               cellHeight={24}
               colLabels={['NET', 'HOST', 'APP', 'DB', 'MW']}
-              rowLabels={['pay', 'shop', 'risk']}
+              rowLabels={['支付', '电商', '风控']}
             />
           </div>
 
           {/* 值班团队 — demo .tm-flip */}
           <div style={panelStyle}>
             <div style={panelHeader}>
-              <span style={panelTitle}>on-call team</span>
-              <span style={mutedText}>hover to flip</span>
+              <span style={panelTitle}>值班团队</span>
+              <span style={mutedText}>悬停翻转</span>
             </div>
             {onCallTeam.map((m, i) => (
               <div key={m.name} style={{ height: 36, marginBottom: i < onCallTeam.length - 1 ? 0 : 6 }}>
@@ -619,7 +619,7 @@ const Home: React.FC = () => {
                   back={
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '2px 12px', fontFamily: 'ui-monospace, monospace', fontSize: 9, height: '100%' }}>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 7, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>phone</div>
+                        <div style={{ fontSize: 7, color: 'var(--text-secondary, rgba(140,170,210,0.35))' }}>电话</div>
                         <div style={{ color: 'var(--text-primary, rgba(200,220,240,0.7))' }}>{m.phone}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>

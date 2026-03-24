@@ -202,6 +202,22 @@ const BasicLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [wsConnected] = useState(true);
 
+  /* ─── 全局字体大小调节 ─── */
+  const FONT_SIZE_KEY = 'opsnexus-font-size';
+  const FONT_SIZES = [
+    { key: '12', label: '小 (12px)' },
+    { key: '13', label: '标准 (13px)' },
+    { key: '14', label: '大 (14px)' },
+    { key: '16', label: '特大 (16px)' },
+  ];
+  const [globalFontSize, setGlobalFontSize] = useState<string>(() => {
+    try { return localStorage.getItem(FONT_SIZE_KEY) || '13'; } catch { return '13'; }
+  });
+  React.useEffect(() => {
+    document.documentElement.style.fontSize = `${globalFontSize}px`;
+    try { localStorage.setItem(FONT_SIZE_KEY, globalFontSize); } catch {}
+  }, [globalFontSize]);
+
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
   const densityFontSize = density === 'compact' ? 12 : density === 'comfortable' ? 14 : 13;
 
@@ -337,6 +353,40 @@ const BasicLayout: React.FC = () => {
               }}
             />
           </Tooltip>
+
+          {/* 全局字体大小调节 */}
+          <Dropdown
+            menu={{
+              items: FONT_SIZES.map((fs) => ({
+                key: fs.key,
+                label: (
+                  <span style={{ fontWeight: globalFontSize === fs.key ? 700 : 400 }}>
+                    {globalFontSize === fs.key ? '✓ ' : '   '}{fs.label}
+                  </span>
+                ),
+              })),
+              onClick: ({ key }) => setGlobalFontSize(key),
+            }}
+            placement="bottomRight"
+          >
+            <Tooltip title={t('header.fontSize', '字体大小')}>
+              <Button
+                type="text"
+                size="small"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  minWidth: 28,
+                }}
+              >
+                A
+              </Button>
+            </Tooltip>
+          </Dropdown>
 
           {/* 语言切换 */}
           <Dropdown
